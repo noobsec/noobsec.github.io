@@ -1,0 +1,53 @@
+I"Ö<p><img src="/images/passwd.jpg" alt="Image of passwd" /></p>
+
+<p>Ah, sudah lama ga nulis, btw ini adalah temuan kami kurang lebih setahun yang lalu. Kami menemukan celah Path Traversal pada salah satu subdomain di salah satu perusahaan di Bugcrowd.com. Tentunya hal ini tidak disengaja karena awalnya hanya mencoba methode dari https://snyk.io/vuln/npm:wangshuai:20170910</p>
+
+<p>Langkah-langkah untuk mencari subdomain (<code class="highlighter-rouge">enumeration</code>) bisa menggunakan:</p>
+<ul>
+  <li><a href="https://github.com/michenriksen/aquatone">Aquatone</a></li>
+</ul>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aquatone-discover --domain domain.com
+</code></pre></div></div>
+
+<ul>
+  <li><a href="https://github.com/aboul3la/Sublist3r">Sublister</a></li>
+</ul>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./Sublist3r.py -d domain.com
+</code></pre></div></div>
+
+<ul>
+  <li>dsb.</li>
+</ul>
+
+<p>kami mendapatkan satu subdomain yaitu myaccount.redacted.com. Lalu kami mencoba dengan memasukkan payload directory traversal https://myaccount.redacted.com//etc/passwd. Diluar ekspektasi kami, muncul file /etc/passwd.</p>
+
+<p><img src="/images/etc_passwd.png" alt="passwd" /></p>
+
+<p>Tapi, kami tidak percaya kami coba untuk memasukkan payload lain seperti /etc/group</p>
+
+<p><img src="/images/etc_group.png" alt="passwd" /></p>
+
+<p>dan /etc/hosts</p>
+
+<p><img src="/images/etc_hosts.png" alt="passwd" /></p>
+
+<p>muncul seperti yang kami harapkan, tanpa berpikir panjang, kami report dan besoknya bug tersebut resolved</p>
+
+<p><strong>STATUS:</strong></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>03 Sep 2018 21:21:25 PDT - Created the Submission
+04 Sep 2018 02:40:01 PDT - Response and triaged
+04 Sep 2018 07:32:30 PDT - Change severity to Critical (P1)
+04 Sep 2018 07:33:24 PDT - Rewarded $4000
+</code></pre></div></div>
+
+<p>Silahkan di share :D</p>
+
+<p>Referensi :</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://snyk.io/vuln/SNYK-JAVA-IOVERTX-72442
+</code></pre></div></div>
+
+<p><img src="https://media.tenor.co/images/c9adfe0f26b3bfe372817b1a6764849a/tenor.gif" alt="done" /></p>
+:ET

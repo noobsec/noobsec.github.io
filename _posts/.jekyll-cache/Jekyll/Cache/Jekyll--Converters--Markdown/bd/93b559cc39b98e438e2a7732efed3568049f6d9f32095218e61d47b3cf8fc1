@@ -1,0 +1,34 @@
+I"�<p><img src="/images/1cak.jpg" alt="Image of Ad Networks" /></p>
+
+<p>Setelah lelah dengan aktifitas sehari-hari, biasanya saya mencari hiburan di Internet. Selain <a href="https://noobsec.org/project/2017-08-18-xhamster-ssrf-vulnerabillity/">Xhamster</a>, saya juga suka mengunjungi situs 1cak untuk melihat karya-karya anak bangsa hehe.</p>
+
+<p>Melihat banyaknya konten di situs tersebut, saya jadi terinspirasi untuk ikut memposting konten di 1cak. Namun namanya orang iseng, selalu ada selintas pertanyaan “Kira-kira di web ini ada bug nya nggak ya?”. Untuk mengetahui hal tersebut tentu saja harus dicoba langsung.</p>
+
+<p>Lalu saya mencoba membuat postingan gambar, dan memasukan karakter “ pada field <strong>Judul</strong>, berharap ada bug XSS pada situs ini. Dan benar saja! setelah gambar berhasil di-post, ada tag HTML yang <strong>rusak</strong> pada halaman Post.</p>
+
+<p>Berikut tag HTML nya:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;img onmouseover="return false" title="ini judulnya"enaena" src="https://cdn16.1cak.com/posts/xxx.jpg"&gt;
+</code></pre></div></div>
+
+<p>Terlihat bahwa Elemen title pada tag <code class="highlighter-rouge">&lt;img&gt;</code> tidak disanitasi dengan baik, sehingga kita dapat menyisipkan elemen HTML didalamnya. Selanjutnya saya kembali memposting ulang gambar dengan mengisi field <strong>Judul</strong> dengan:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>judulnya" onload="alert(document.cookie)"
+</code></pre></div></div>
+
+<p><img src="/images/1cak_xss.jpg" alt="Image of 1cak XSS" /></p>
+
+<p>Dan payload XSS pun tereksekusi!</p>
+
+<p>HTML tag nya pun menjadi seperti ini:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;img onmouseover="return false" title="judulnya" onload="alert(document.cookie)" src="https://cdn16.1cak.com/posts/xxx.jpg"&gt;
+</code></pre></div></div>
+
+<p>Saya segera melapor pada admin situs 1cak. Tidak lama kemudian dia membalas dan mengatakan bahwa bug tersebut telah selesai dipatch. Luar biasa cepat!</p>
+
+<p>Dan saya pun diberi reward berupa pulsa atas temuan ini. Hehe lumayan..</p>
+
+<p><img src="/images/1cak_emails.jpg" alt="Image of 1cak Email" /></p>
+
+:ET

@@ -1,0 +1,27 @@
+I"Q<p><img src="/images/bl_banner.jpg" alt="Bukalapak" /></p>
+
+<p>Bug ini ditemukan pada salah satu layanan Bukalapak. Pada layanan tersebut, terdapat sebuah fitur untuk meng-invite member Bukalapak untuk menjadi <em>anggota</em> kita. Ketika melakukan proses invivation, saya pun membuka Burpsuite dan mengecek bagaimana bentuk data yang dikirimkan ke server.</p>
+
+<p>Ternyata, data yang dikirimkan berisi parameter <strong>bukalapak_user_id</strong> yang merupakan user id dari member bukalapak, dan pada response-nya, menampilkan string <strong>email</strong> yang merupakah alamat email dari member tersebut.</p>
+
+<p><strong>REQUEST</strong></p>
+
+<p><img src="/images/bl_idor_post.png" alt="Bukalapak" /></p>
+
+<p><strong>RESPONSE</strong></p>
+
+<p><img src="/images/bl_idor_response2.png" alt="Bukalapak" /></p>
+
+<p>Dengan merubah-rubah parameter <strong>bukalapak_user_id</strong>, kita bisa mendapatkan informasi alamat email dari setiap member Bukalapak.</p>
+
+<p><img src="/images/ezgif-1-5f5db7e9d815.gif" alt="Bukalapak IDOR" /></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Timeline:
+
+[ 23 Nov 2018 ]: Bug Report
+[ 23 Nov 2018 ]: Respon dari Bukalapak, Report Valid S3
+[ 28 Nov 2018 ]: Bug Fixed
+[ 28 Nov 2018 ]: Bukalapak Meminta Informasi untuk Reward
+[ 10 Des 2018 ]: Reward Diterima
+</code></pre></div></div>
+:ET

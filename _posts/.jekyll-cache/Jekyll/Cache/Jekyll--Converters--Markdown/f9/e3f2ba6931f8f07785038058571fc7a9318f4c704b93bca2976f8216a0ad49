@@ -1,0 +1,38 @@
+I"�<p><img src="/images/xss_pic.png" alt="XSS on Error Page" /></p>
+
+<p>Terkadang untuk melakukan eksploitasi XSS (khususnya Reflected XSS), kita terfokus untuk menemukan halaman input seperti “Kolom Pencarian” dan sejenisnya untuk dilakukan pengetesan untuk mengetahui apakah kolom tersebut memiliki kerentanan terhadap serangan XSS atau tidak.</p>
+
+<p>Tak jarang seorang developer hanya fokus untuk melakukan sanitasi dan filter terhadap serangan ini pada halaman yang lazim di akses oleh pengunjung saya. Padahal tidak menutup kemungkinan serangan XSS dapat terjadi pada halaman lainnya, termasuk “Halaman Error”.</p>
+
+<p>Pada saat melakukan Bug Hunting, penulis menemukan sebuah fitur upload dan download file. Ketika file berhasil di upload, untuk melakukan download file tersebut user akan di arahkan ke URL seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://b15.[redacted.com]/file.php?spaceid=user@mail.com&amp;file=filename.jpg
+</code></pre></div></div>
+
+<p>Pada awalnya, penulis mengira URL tersebut memiliki kerentanan LFI atau LFD, namun setelah dicoba merubah parameter <code class="highlighter-rouge">file</code> dengan file lain, ternyata tidak bekerja dan memunculkan pesan error.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://b15.[redacted.com]/file.php?spaceid=user@mail.com&amp;file=../../../../etc/passwd
+</code></pre></div></div>
+
+<p><img src="/images/xss_error1_rev.png" alt="XSS on Error Page" /></p>
+
+<p>Namun bila di perhatikan, isi dari parameter <code class="highlighter-rouge">file</code> tadi terefleksi pada halaman error tersebut. Lalu penulis mencoba untuk memasukan tag HTML untuk mengetes apakah terdapat filter atau tidak pada parameter <code class="highlighter-rouge">file</code> tadi.</p>
+
+<p>Dan benar saja, tag HTML berhasil dirender pada halaman tersebut.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://b15.[redacted.com]/file.php?spaceid=user@mail.com&amp;file=&lt;h1&gt;asu
+</code></pre></div></div>
+
+<p><img src="/images/xss_error2_rev.png" alt="XSS on Error Page" /></p>
+
+<p>Tanpa menunggu lama, penulis langsung mencoba payload XSS pada halaman tersebut dan XSS pun tereksekusi.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://b15.[redacted.com]/file.php?spaceid=user@mail.com&amp;file=&lt;img src=x onerror=alert(1)&gt;
+</code></pre></div></div>
+
+<p><img src="/images/xss_error3_rev.png" alt="XSS on Error Page" /></p>
+
+<p>Salah satu tips untuk <code class="highlighter-rouge">berburu</code> Reflected XSS adalah dengan mengetes berbagai parameter yang terdapat pada suatu <code class="highlighter-rouge">endpoint</code>. Baik yang ada pada halaman Front End, atau bahkan pada halaman Error seperti contoh diatas.</p>
+
+<p>Demikian artikel ini ditulis, semoga bermanfaat bagi kita semua.</p>
+:ET

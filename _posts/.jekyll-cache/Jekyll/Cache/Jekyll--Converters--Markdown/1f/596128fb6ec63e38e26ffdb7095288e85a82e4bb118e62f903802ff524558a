@@ -1,0 +1,67 @@
+I"�<p><img src="/images/tv.png" alt="Image of Traveloka" /></p>
+
+<p>Berawal ketika selesai memesan Hotel di situs traveloka.com, saya pun membuka <em>email</em> untuk melihat Voucher Hotel yang baru saja saya pesan. Ketika membaca kata-kata mutiara pada <em>email</em> yang masuk, saya pun melihat ada tautan yang menuju ke <em>link</em> yang memuat file PDF dari Voucher saya tadi.</p>
+
+<p>Link tersebut bentuknya kurang lebih seperti ini:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://www.traveloka.com/r?id=1607148893701&amp;target=http://www.traveloka.com/pdf/xx.pdf
+</code></pre></div></div>
+
+<p>Pada <em>URL</em> tersebut terlihat ada 2 <em>parameter</em>, yakni <strong>id</strong> dan <strong>target</strong>.</p>
+
+<p>Iseng-iseng saya merubah value dari parameter <strong>id</strong>, dan wow redirect tetap berjalan! Itu artinya parameter <strong>id</strong> bukanlah sebuah validasi, jadi valuenya dirubah menjadi apapun tidak akan berpengaruh pada proses redirect nya.</p>
+
+<p><img src="/images/happy.gif" alt="Image of Happy" /></p>
+
+<p>Dengan ini, asumsi saya kemungkinan website Traveloka memiliki bug <em>Open Redirect</em>. Sebelum dilanjutkan, saya membuka halaman Traveloka Bugs untuk mengecek apakah Open Redirect termasuk ke dalam scope mereka.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Open redirect menuju Google.com, Facebook.com, Twitter.com atau domain manapun yang kami anggap sebagai situs web terpercaya.
+</code></pre></div></div>
+
+<p>Oke, <em>Open Redirect</em> termasuk ke dalam scope mereka asalkan itu selain menuju ke website yang mereka anggap sebagai situs terpercaya. Tapi masalahnya kita tidak tau domain mana saja yang mereka anggap website terpercaya.</p>
+
+<p>Selepas dari itu, mari kita coba untuk melakukan pengecekan lebih dalam. Pertama saya mencoba membuka URL berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://www.traveloka.com/r?id=1&amp;target=http://www.xvideos.com
+</code></pre></div></div>
+
+<p>Ketika dibuka halaman dialihkan ke traveloka.com. Artinya setiap parameter <strong>target</strong> berisi domain yang “tidak terpercaya” akan segera dialihkan ke index website Traveloka.</p>
+
+<p>Saya mencoba mengganti-ganti format URL, namun hasilnya sia-sia. Ternyata memang URL parsernya tidak bisa di-bypass.</p>
+
+<p><img src="/images/sad.gif" alt="Image of Sad" /></p>
+
+<p>Setelah menghabiskan segelas kopi, saya terpikirkan sebuah cara yang mungkin bisa berhasil. Bagaimana kalau parameter <strong>target</strong> kita isi dengan <em>URL Shortener</em>!
+Kurang lebih flow nya seperti ini:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Traveloka.com =&gt; URL Shortener =&gt; Website Tidak Terpercaya
+</code></pre></div></div>
+
+<p>Langung saya masukan link URL Shortener dari goo.gl karena saya pikir URL Shortener tersebut milik Google dan mungkin termasuk kedalam <strong>Website yang terpercaya</strong> oleh traveloka.</p>
+
+<p>Lagi-lagi halaman dialihkan ke index Traveloka yang menyatakan bahwa domain goo.gl pun tidak termasuk kedalam <strong>Website terpercaya</strong>.</p>
+
+<p>Lalu saya terpikirkan URL Shortener lain yang cukup familiar. URL Shortener ini sering dipakai oleh website-website perusahaan besar, yaitu Bitly.</p>
+
+<p>Saya mencoba memasukan URL Bitly, dan berhasil! Halaman dialihkan ke <strong>Website tidak terpercaya.</strong></p>
+
+<p>Setelah ini saya segera melapor pada Traveloka terkait kemungkinan Bug yang saya temukan ini. Walaupun saya sedikit pesimis karena bisa saja itu terjadi karena Bitly termasuk <strong>Website terpercaya.</strong> Tapi yah namanya juga iseng, dicoba saja hehe.</p>
+
+<p>Beberapa hari kemudian Traveloka membalas email dan menyatakan bug yang saya temukan adalah valid!</p>
+
+<p><img src="/images/email_tv.jpg" alt="Image of Bug Valid" /></p>
+
+<p>Gak nyangka juga berawal dari iseng ngutak-ngatik URL eh malah nemu Bug, hehe. Begitulah cerita saya menemukan Bug Open Redirect pada situs domain traveloka.com.</p>
+
+<p>Saat ini status Bug sudah di Patch.</p>
+
+<p>Referensi:</p>
+
+<ul>
+  <li>
+    <p><a href="https://www.owasp.org/index.php/Unvalidated_Redirects_and_Forwards_Cheat_Sheet">Unvalidated Redirects and Forwards Cheat Sheet</a></p>
+  </li>
+  <li>
+    <p><a href="https://www.blackhat.com/docs/us-17/thursday/us-17-Tsai-A-New-Era-Of-SSRF-Exploiting-URL-Parser-In-Trending-Programming-Languages.pdf">A New Era Of SSRF Exploiting URL Parser</a></p>
+  </li>
+</ul>
+:ET

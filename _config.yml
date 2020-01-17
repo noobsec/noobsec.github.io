@@ -1,0 +1,59 @@
+# Site
+name: "noobSecurity"
+description: "One mistake can make you crazy"
+meta_description: "noobsec, noobsecurity, pentesting, penetration tester"
+logo: "assets/images/noobsecnew.png"
+favicon: "assets/images/noob-favicon.png"
+baseurl: ""
+url: "https://noobsec.org"
+enforce_ssl: "noobsec.org"
+disqus: "noobsec"
+
+# Authors
+authors:
+  dw1:
+    name: Dwi Siswanto
+    display_name: dw1
+    facebook: "100004896060156"
+    email: dw1@noobsec.org
+    web: https://dw1.co
+    description: "Aku datang tuk kebumikan gayamu yang selangit!"
+  xhellc0de:
+    name: Tomi Ashari
+    display_name: xhellc0de
+    facebook: "1463482790"
+    email: tomi@noobsec.org
+    web: "#"
+    description: "/Hidup seperti Squidward/"
+  Blankon33:
+    name: Faizal Abroni
+    display_name: Blankon33
+    facebook: "100000115162598"
+    email: "faizal@noobsec.org"
+    web: "#"
+    description: "Peternak kudanil"
+
+# Plugins
+plugins: 
+  - jekyll-paginate
+  - jekyll-archives
+    
+# Archives
+jekyll-archives:
+  enabled:
+    - categories
+  layout: archive
+  permalinks:
+    category: "/category/:name/"
+    
+# Pagination 
+paginate: 6
+paginate_path: /page/:num/
+    
+# Other
+markdown: kramdown
+permalink: /:categories/:title/
+highlighter: rouge
+
+future: true
+published: true

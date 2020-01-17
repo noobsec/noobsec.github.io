@@ -1,0 +1,79 @@
+I"5<p><img src="https://www.javatpoint.com/images/androidimages/flow.jpg" alt="Flow" /></p>
+
+<p><em>(Flow Dalvik Virtual Machine. Sumber: www.javatpoint.com)</em></p>
+
+<p>Semua aplikasi Android yang terinstall adalah APK <em>(Android Package)</em>. Format file paket ini digunakan oleh sistem operasi Android untuk distribusi dan pemasangan aplikasi <em>smartphones</em>, dan ini berisi semua sumber daya aplikasi, aset, sertifikat, dan sebagainya, termasuk <em>source code</em> aplikasi.</p>
+
+<h6 id="catatan-jika-pratinjau-gambar-kurang-jelas-klik-gambar-untuk-melihat-dengan-resolusi-utuh">Catatan: jika pratinjau gambar kurang jelas, klik gambar untuk melihat dengan resolusi utuh.</h6>
+
+<p>Dalam postingan ini, saya gunakan aplikasi <strong>BCA mobile</strong> sebagai percobaan <em>reverse engineering</em> yang sudah terinstall di <em>smartphone</em> saya.
+Saya menggunakan <em>tool</em> <a href="https://developer.android.com/studio/command-line/adb?hl=en">Android Debug Bridge (adb)</a>, dengan perintah <code class="highlighter-rouge">adb shell pm list packages</code> kita dapat melihat semua aplikasi yang terinstall pada <em>smartphone</em> kita, lalu saya memindahkan file APK BCA mobile dari Android ke laptop dengan perintah <code class="highlighter-rouge">adb pull [file]</code>.</p>
+
+<p><a href="/images/cara-reverse-engineering-apk_1.png"><img src="/images/cara-reverse-engineering-apk_1.png" alt="ADB Pull" /></a></p>
+
+<p>Setelah itu, mari kita ekstrak file APK tersebut dengan <code class="highlighter-rouge">unzip [file]</code>.</p>
+
+<p><a href="/images/cara-reverse-engineering-apk_2.png"><img src="/images/cara-reverse-engineering-apk_2.png" alt="unzip" /></a></p>
+
+<h3 id="file-dex">File Dex?</h3>
+
+<p>Dex adalah <strong>Dalvik Executable</strong>, dan file tersebut adalah bentuk kompilasi dari <strong>Java Virtual Machine-compatible</strong> yang berisi seluruh kelas-kelas Java yang terdiri dari Dalvik <em>bytecode</em>. Dalvik <em>bytecode</em> dijalankan oleh <strong>Dalvik Virtual Machine</strong>, seperti <strong>Java Virtual Machine</strong> <em>(JVM)</em>, tetapi dioptimalkan untuk perangkat keras dan kebutuhan <em>smartphones</em>. Dalvik Virtual Machine-lah yang bertanggung jawab untuk menjalankan program pada sistem operasi Android.</p>
+
+<p>Kita dapat dengan mudah mengekstrak file Dex dari APK <em>(bahkan dengan WinRAR, karena APK adalah format file paket yang terextend dari ZIP)</em>, tetapi instruksi <em>bytecode</em> tidak <strong>human readable</strong>. Dengan <strong>Baksmali</strong> <em>(disassembler)</em> kita dapat mengubah file Dex kita menjadi file <strong>Smali</strong> yang ditulis dalam sintaks seperti awal <em>(masih tingkat rendah, tetapi dapat dibaca dengan pasti)</em>. Disini saya menggunakan <a href="https://github.com/pxb1988/dex2jar">dex2jar</a>.</p>
+
+<p>Karena secara <em>default</em> file Dex dari APK bernama <code class="highlighter-rouge">classes.dex</code>. <em>Disassembler</em> file Dex ke Smali dengan perintah <code class="highlighter-rouge">d2j-dex2smali [file]</code>.</p>
+
+<p><a href="/images/cara-reverse-engineering-apk_3.png"><img src="/images/cara-reverse-engineering-apk_3.png" alt="baksmali" /></a></p>
+
+<p>Saya mulai mencari <strong>“sesuatu yang penting”</strong> secara rekursif dengan <code class="highlighter-rouge">grep</code>. Mengawali dengan <code class="highlighter-rouge">grep</code> adalah kebiasaan saya, ini berguna untuk mencari <em>host</em> dan/ titik <em>endpoint</em>, baris konfigurasi dan/ <em>environment</em>, <em>secret key</em> yang ditulis secara statis, dan lain-lain.</p>
+
+<p><a href="/images/cara-reverse-engineering-apk_4.png"><img src="/images/cara-reverse-engineering-apk_4.png?_" alt="grep" /></a></p>
+
+<p>Setelah memiliki file Smali, kita dapat mengkonversikannya kembali ke file Java, tetapi dengan hanya sebagian keberhasilan. Beberapa alasannya mungkin termasuk penggunaan <strong>obfuscator</strong> oleh <em>developer</em> <em>(alat yang dimaksudkan untuk membuat proses reverse engineering menjadi lebih sulit)</em>. Namun, saya akan mencoba membongkar apa yang saya bisa karena itu sangat memudahkan proses memahami apa yang dilakukan aplikasi.</p>
+
+<p><em>Disassembler</em> file Dex ke Jar (Java) dengan perintah <code class="highlighter-rouge">d2j-dex2jar [file]</code>.</p>
+
+<p><a href="/images/cara-reverse-engineering-apk_5.png"><img src="/images/cara-reverse-engineering-apk_5.png" alt="dex2jar" /></a></p>
+
+<p>Untuk melihat kelas-kelas dari file Jar tersebut saya menggunakan aplikasi <em>standalone</em> <a href="https://github.com/java-decompiler/jd-gui">Java Decompiler GUI</a>.</p>
+
+<p><a href="/images/cara-reverse-engineering-apk_6.png"><img src="/images/cara-reverse-engineering-apk_6.png" alt="jd-gui" /></a></p>
+
+<p>Berikut pratinjau dari Java Decompiler GUI.</p>
+
+<p><a href="/images/cara-reverse-engineering-apk_7.png"><img src="/images/cara-reverse-engineering-apk_7.png" alt="jd-gui Preview" /></a></p>
+
+<p>Kita juga dapat menyimpan <em>source code</em> kelas-kelas Java dari file Jar dengan <strong>jd-gui</strong>, <strong>File &gt; Save All Sources (CTRL+Alt+S)</strong>.</p>
+
+<p><a href="/images/cara-reverse-engineering-apk_8.png"><img src="/images/cara-reverse-engineering-apk_8.png?_" alt="jd-gui save all sources" /></a></p>
+
+<p>Saya coba mencari <strong>“sesuatu yang penting”</strong> lagi, tetapi di dalam sekumpulan kelas-kelas Java yang baru saja saya simpan dari <strong>jd-gui</strong> dan mengekstraknya.</p>
+
+<p><a href="/images/cara-reverse-engineering-apk_9.png"><img src="/images/cara-reverse-engineering-apk_9.png" alt="grep java" /></a></p>
+
+<p>Berikut hasil pemyimpanan kelas-kelas Java dari <strong>jd-gui</strong> yang baru saja saya ekstrak dan juga diimport ke Sublime Text.</p>
+
+<p><a href="/images/cara-reverse-engineering-apk_10.png"><img src="/images/cara-reverse-engineering-apk_10.png" alt="jd-gui preview java classes" /></a></p>
+
+<h3 id="etc">etc</h3>
+
+<p>Oke, sebelum terlalu jauh, saya hentikan sampai sini dulu pembahasan kali ini <em>(karena takut “berlebihan”)</em>. Mungkin nanti saya akan menuliskan bagian ke-2 atau seterusnya, tentang bagaimana memodifikasi APK, atau bagaimana cara melacak aktivitas APK dari awal berjalannya aplikasi, dan lain sebagainya.</p>
+
+<h6 id="perlu-diingat-segala-tindakan-yang-anda-implementasi-dari-tutorial-ini-bukan-tanggung-jawab-dari-penulis">Perlu diingat, segala tindakan yang Anda implementasi dari tutorial ini bukan tanggung jawab dari penulis.</h6>
+
+<p>Tinggalkan komentar di bawah jika masih bimbang tentang apa yang sudah saya jabarkan.</p>
+
+<h2 id="referensi">Referensi</h2>
+
+<ul>
+  <li>https://developer.android.com/studio/command-line/adb?hl=en</li>
+  <li>https://github.com/pxb1988/dex2jar</li>
+  <li>https://github.com/java-decompiler/jd-gui</li>
+  <li>https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html</li>
+  <li>https://en.wikipedia.org/wiki/Dalvik_(software)</li>
+  <li>https://source.android.com/devices/tech/dalvik/dalvik-bytecode</li>
+  <li>http://pallergabor.uw.hu/androidblog/dalvik_opcodes.html</li>
+  <li>https://github.com/JesusFreke/smali/wiki/Registers</li>
+  <li>https://github.com/JesusFreke/smali/wiki/TypesMethodsAndFields</li>
+</ul>
+:ET

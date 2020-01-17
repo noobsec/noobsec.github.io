@@ -1,0 +1,85 @@
+I"±<p><img src="/images/ycom9.png" alt="Image of takeover" /></p>
+
+<p>beberapa bulan yang lalu, saya menemukan <em>missconfiguration</em> pada DNS yang menyebabkan kita bisa men-_takeover_ salah satu subdomain <code class="highlighter-rouge">ycombinator.com</code>.</p>
+
+<p>Langkah-langkah untuk mencari subdomain (<code class="highlighter-rouge">enumeration</code>) bisa menggunakan:</p>
+<ul>
+  <li><a href="https://github.com/michenriksen/aquatone">Aquatone</a></li>
+</ul>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aquatone-discover --domain domain.com
+</code></pre></div></div>
+
+<ul>
+  <li><a href="https://github.com/aboul3la/Sublist3r">Sublister</a></li>
+</ul>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./Sublist3r.py -d domain.com
+</code></pre></div></div>
+
+<ul>
+  <li>dsb.</li>
+</ul>
+
+<p>lalu bagaimana untuk mengetahui apakah subdomain bisa di takeover? kita bisa memeriksa satu-persatu subdomain atau menggunakan <code class="highlighter-rouge">Aquatone-takeover --domain domain.com</code> atau tools lain seperti <a href="https://github.com/Ice3man543/SubOver">SubOver</a>.</p>
+
+<p>apabila terdeteksi <em>possible takeover on xxx.com</em> kita cek domain tersebut, sebagai contoh gambar berikut adalah contoh dimana subdomain yang mengarahkan <code class="highlighter-rouge">cname</code> ke <a href="https://aws.amazon.com/id/cloudfront/">cloudfront</a></p>
+
+<p><img src="/images/ycom2.png" alt="possible takeover" /></p>
+
+<p>untuk mengetahui apakah subdomain tersebut lakukan verifikasi, bisa menggunakan <code class="highlighter-rouge">digg</code></p>
+
+<p><img src="/images/ycom10.png" alt="digg image" /></p>
+
+<p>Setelah itu coba clain subdomain menggunakan AWS Cloudfront. Langkah-langkahnya yaitu:</p>
+
+<ul>
+  <li>login dan masuk ke cloudfront dashboard</li>
+  <li><em>Create Distribution</em></li>
+</ul>
+
+<p><img src="/images/ycom3.png" alt="create dis" /></p>
+
+<ul>
+  <li>pilih <em>get started</em></li>
+</ul>
+
+<p><img src="/images/ycom4.png" alt="get started" /></p>
+
+<ul>
+  <li>set <em>origin</em>, yaitu tambahkan <em>bucket</em> Anda, jika belom punya bisa <em>create</em> dan upload html sebagai halaman utama</li>
+</ul>
+
+<p><img src="/images/ycom5.png" alt="set origin" /></p>
+
+<ul>
+  <li>tambahkan domain target sebagai cname</li>
+</ul>
+
+<p><img src="/images/ycom6.png" alt="set cname" /></p>
+
+<ul>
+  <li><em>create</em> dan simpan, tunggu sampai proses selesai</li>
+</ul>
+
+<p><img src="/images/ycom11.png" alt="save" /></p>
+
+<ul>
+  <li>apabila proses selesai, kita bisa buka subdomain target dan <strong>BOOOM</strong> kita berhasil men-_takeover_ subdomain yang menggunakan <em>service</em> cloudfront</li>
+</ul>
+
+<p><img src="/images/ycom8.png" alt="success" /></p>
+
+<p><strong>STATUS: FIXED</strong></p>
+
+<p>Silahkan di share :D</p>
+
+<p>Referensi :</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://www.hacker101.com/vulnerabilities/subdomain_takeover.html
+https://www.hackerone.com/blog/Guide-Subdomain-Takeovers
+https://0xpatrik.com/subdomain-takeover-basics/
+</code></pre></div></div>
+
+<p><img src="https://media.tenor.co/images/c9adfe0f26b3bfe372817b1a6764849a/tenor.gif" alt="done" /></p>
+:ET

