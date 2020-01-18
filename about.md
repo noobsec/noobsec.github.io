@@ -12,7 +12,6 @@ Since 2k16, we are:
 
 - dw1
 - Blank0n33
-- xhellc0de
 - sat4n
 - 0xjaw
 
