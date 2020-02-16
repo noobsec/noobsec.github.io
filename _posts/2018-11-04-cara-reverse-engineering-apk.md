@@ -8,7 +8,7 @@ categories: [ reverse-engineer, apk ]
 tags: reverse-engineering baksmali disassembler apk android-package
 comments: true
 image: https://www.javatpoint.com/images/androidimages/flow.jpg
-featured: true
+featured: false
 ---
 
 ![Flow](https://www.javatpoint.com/images/androidimages/flow.jpg)
