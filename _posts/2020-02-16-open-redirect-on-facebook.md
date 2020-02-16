@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Open-redirect on Facebook (Bypass Linkshim)
-date: 2019-12-22 10:00:00 PM
+date: 2020-02-16 10:00:00 PM
 permalink: /project/2020-01-26-open-redirect-on-facebook/
 author: dw1
 categories: [ open-redirect, bugbounty, missconfig ]
